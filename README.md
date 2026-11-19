@@ -23,7 +23,7 @@ Trifid uses the official Node.js 22 runtime in `/opt/id-linkcite/runtime`, which
 
 Browsers get pages written for people, where one exists; tools asking for Turtle or JSON-LD still get data from the same IRI. `scripts/pages.py` writes them into `build/pages/` from the public data and the text in `site/content/`, using the Jinja2 templates in `site/templates/` and the stylesheet in `site/assets/`. `trifid/plugins/pages.js` serves them; any IRI without a page falls back to Trifid's generic view.
 
-So far there is one: the patterns overview, `/patterns/scheme`. Edit `site/content/patterns.toml` to change its introduction or the section and cluster descriptions, then build and deploy. Pages carry `noindex` until the book is published (`site/templates/base.html.j2`).
+So far they cover the patterns: the overview at `/patterns/scheme`, and a page for each pattern and cluster. Edit `site/content/patterns.toml` to change the introduction, the section and cluster descriptions, or the wording on pattern pages, then build and deploy. Frameworks and tags still use Trifid's generic view. Pages carry `noindex` until the book is published (`site/templates/base.html.j2`).
 
 ## What is public
 

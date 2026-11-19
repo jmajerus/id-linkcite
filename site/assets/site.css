@@ -95,3 +95,24 @@ ul.patterns { list-style: none; padding: 0; margin: 0 0 1rem; }
   .site-header, .contents, .copy { display: none; }
   body { background: #fff; color: #000; }
 }
+
+/* Pattern pages */
+.entry h1 { margin-top: 0.4rem; }
+.kind { margin: 2rem 0 0; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.badge.cluster { color: var(--muted); background: var(--note-bg); }
+.placement { color: var(--muted); margin: 0 0 1.2rem; }
+.lede { font-family: var(--serif); font-size: 1.15rem; }
+.pending { border-left: 3px solid var(--rule); padding: 0.1rem 0 0.1rem 1rem; color: var(--muted); font-style: italic; margin: 1.5rem 0 2rem; }
+.pending p { margin: 0; }
+.facet h2 { font-size: 1.2rem; margin: 1.8rem 0 0.3rem; }
+ul.chips { list-style: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+ul.chips a { display: inline-block; padding: 0.25rem 0.7rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
+  color: var(--text); text-decoration: none; font-size: 0.9rem; }
+ul.chips a:hover { border-color: var(--link); color: var(--link); }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 2.5rem 0 0; }
+.pager a { display: block; border: 1px solid var(--rule); border-radius: 10px; padding: 0.6rem 0.9rem; text-decoration: none; background: var(--surface); }
+.pager a span { display: block; font-size: 0.8rem; color: var(--muted); }
+.pager .next { text-align: right; grid-column: 2; }
+.cite { background: var(--note-bg); border-radius: 10px; padding: 0.9rem 1.2rem; margin: 2rem 0 0; }
+.cite h2 { font-size: 1.05rem; margin: 0 0 0.3rem; }
+.cite p { margin: 0; overflow-wrap: anywhere; }

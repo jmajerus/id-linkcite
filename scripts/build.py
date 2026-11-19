@@ -137,7 +137,7 @@ def main():
     (args.out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     (args.out / 'welcome.hbs').write_text(welcome(manifest), encoding='utf-8')
     pages = write_pages(dataset, base + '/', args.out / 'pages')
-    print(f"Wrote {len(pages)} reader page(s): {', '.join(pages)}")
+    print(f'Wrote {len(pages)} reader pages')
     print(f"Wrote {args.out / 'public.nq'}: {len(lines)} quads" + ('' if args.definitions else ', without definitions'))
 
 

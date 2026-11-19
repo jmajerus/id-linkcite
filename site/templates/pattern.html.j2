@@ -1,0 +1,75 @@
+{% extends 'base.html.j2' %}
+{% macro kind_badge(p) %}
+  {% if p.kind == 'anti' %}<span class="badge anti">Anti-pattern</span>{% elif p.kind == 'restorative' %}<span class="badge restorative">Restorative pattern</span>{% else %}<span class="badge cluster">Cluster</span>{% endif %}
+  {% if p.provisional %}<span class="badge provisional">Provisional</span>{% endif %}
+{% endmacro %}
+{% macro links(title, items, note='', verb='') %}
+  {% if items %}
+  <section class="facet">
+    <h2>{{ title }}</h2>
+    {% if note %}<p class="blurb">{{ note }}</p>{% endif %}
+    <ul class="patterns">
+      {% for r in items %}
+      <li class="pattern {{ r.kind }}"><a href="{{ r.href }}">{{ r.label }}</a>{% if r.provisional %} <span class="badge provisional">Provisional</span>{% endif %}
+        {% if verb == 'answers' %}<span class="answer">{{ 'Counters and interrupts' if r in p.counters and r in p.interrupts else 'Interrupts' if r in p.interrupts else 'Counters' }} it</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+{% endmacro %}
+{% macro chips(title, tags, note) %}
+  {% if tags %}
+  <section class="facet">
+    <h2>{{ title }}</h2>
+    {% if note %}<p class="blurb">{{ note }}</p>{% endif %}
+    <ul class="chips">{% for t in tags %}<li><a href="{{ t.href }}">{{ t.label | replace('-', ' ') }}</a></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+{% endmacro %}
+
+{% block title %}{{ p.label }}{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="/patterns/scheme">{{ content.title }}</a>{% if p.group and p.group.id != 'restorative-patterns' %} / <a href="/patterns/scheme#{{ p.group.id }}">{{ p.group.title }}</a>{% endif %}</span>{% endblock %}
+
+{% block main %}
+<article class="entry">
+  <p class="kind">{{ kind_badge(p) }}</p>
+  <h1>{{ p.label }}</h1>
+  <p class="placement">
+    {% for g in p.groups %}
+      {% if g.numeral %}Annex 2, section {{ g.numeral }}: <a href="/patterns/scheme#{{ g.id }}">{{ g.title }}</a>
+      {% elif g.cluster %}Part of the <a href="{{ g.href }}">{{ g.title }}</a> cluster
+      {% elif g.id == 'proposed' %}Proposed for the catalog; not yet in the book
+      {% else %}One of the catalog's <a href="/patterns/scheme#{{ g.id }}">restorative patterns</a>{% endif %}{{ '<br>' | safe if not loop.last }}
+    {% endfor %}
+    {% if p.kind == 'cluster' %}A group of {{ p.members | length }} micro-patterns in the catalog{% endif %}
+  </p>
+  {% if p.kind == 'cluster' and p.group and p.group.blurb %}<p class="lede">{{ p.group.blurb }}</p>{% endif %}
+
+  {% set noun = 'cluster' if p.kind == 'cluster' else 'pattern' %}
+  <div class="pending">{{ (page.description_proposed if p.group and p.group.id == 'proposed' else page.description_pending.replace('{noun}', noun)) | md }}</div>
+
+  {% if p.kind == 'cluster' %}{{ links('Patterns in this cluster', p.members) }}{% endif %}
+  {{ links('Answered by', p.answered_by, page.answered_by) }}
+  {% if p.counters and p.interrupts %}{{ links('What it answers', p.answers, page.answers, 'answers') }}
+  {% elif p.counters %}{{ links('What it answers', p.counters, page.counters) }}
+  {% else %}{{ links('What it answers', p.interrupts, page.interrupts) }}{% endif %}
+  {{ links('Related patterns', p.related) }}
+  {% if p.cluster %}{{ links('Also in ' ~ p.cluster.label, p.cluster.members | reject('sameas', p) | list) }}{% endif %}
+  {{ chips('Where it appears', p.contexts, page.contexts) }}
+  {{ chips('How it works', p.functions, page.functions) }}
+  {{ chips('What works against it', p.counter_tags, page.counter_tags) }}
+
+  {% if previous or next %}
+  <nav class="pager" aria-label="{{ p.group.title }}">
+    {% if previous %}<a class="prev" href="{{ previous.href }}"><span>Previous</span>{{ previous.label }}</a>{% else %}<span></span>{% endif %}
+    {% if next %}<a class="next" href="{{ next.href }}"><span>Next</span>{{ next.label }}</a>{% endif %}
+  </nav>
+  {% endif %}
+
+  <section class="cite">
+    <h2>Cite this {{ noun }}</h2>
+    <p>“{{ p.label }}.” In <cite>{{ content.title }}</cite>, from <cite>The Struggle Against Dehumanization</cite>. <a href="{{ iri }}">{{ iri }}</a></p>
+  </section>
+</article>
+{% endblock %}
