@@ -1,0 +1,18 @@
+{
+  "name": "id-linkcite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Serves https://id.linkcite.org: each IRI resolves to its public description, from a read-only Oxigraph store, through Trifid",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "start": "trifid --config trifid/config.yaml",
+    "deploy": "python3 tools/deploy.py"
+  },
+  "dependencies": {
+    "trifid": "6.1.0"
+  }
+}

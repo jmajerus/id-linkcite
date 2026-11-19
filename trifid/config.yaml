@@ -1,0 +1,54 @@
+# Trifid for https://id.linkcite.org. Listens on 7878 (the tunnel's target) and reads a
+# read-only Oxigraph on 127.0.0.1:7879.
+server:
+  listener:
+    host: 0.0.0.0
+    port: 7878
+  logLevel: info
+
+globals:
+  # Locally (http://localhost:7878) IRIs are rewritten to the request's host; behind the
+  # tunnel the request host is id.linkcite.org, so nothing changes.
+  datasetBaseUrl: https://id.linkcite.org/
+  endpoints:
+    default:
+      url: /query
+
+plugins:
+  welcome:
+    module: trifid-core/plugins/view.js
+    paths: /
+    methods: GET
+    config:
+      path: file:../build/welcome.hbs
+
+  entity-renderer:
+    module: "@zazuko/trifid-entity-renderer"
+    config:
+      # A document IRI such as /patterns/vocab also shows its hash terms (/patterns/vocab#Pattern).
+      resourceExistsQuery: 'ASK { ?s ?p ?o FILTER(?s = <{{iri}}> || STRSTARTS(STR(?s), CONCAT(STR(<{{iri}}>), "#"))) }'
+      resourceGraphQuery: 'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o FILTER(?s = <{{iri}}> || STRSTARTS(STR(?s), CONCAT(STR(<{{iri}}>), "#"))) }'
+      labelLoader:
+        chunkSize: 30
+        concurrency: 2
+        timeout: 4000
+        predicates:
+          - http://www.w3.org/2004/02/skos/core#prefLabel
+          - http://www.w3.org/2000/01/rdf-schema#label
+
+  yasgui:
+    module: trifid-plugin-yasgui
+    paths:
+      - /sparql
+      - /sparql/
+
+  sparql-proxy:
+    module: "@zazuko/trifid-plugin-sparql-proxy"
+    paths: /query
+    config:
+      endpointUrl: http://127.0.0.1:7879/query
+      formats:
+        ttl: text/turtle
+        jsonld: application/ld+json
+        nt: application/n-triples
+        trig: application/trig

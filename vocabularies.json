@@ -1,0 +1,27 @@
+{
+  "base": "https://id.linkcite.org/",
+  "vocabularies": [
+    {
+      "path": "patterns",
+      "title": "Dehumanization Patterns",
+      "home": "https://id.linkcite.org/patterns/scheme",
+      "sources": ["../dehumanization-patterns/patterns-catalog.ttl", "../dehumanization-patterns/build/dehumanization-patterns.ttl"],
+      "build": "Run python scripts/build_terminology_scheme.py in dehumanization-patterns."
+    },
+    {
+      "path": "frameworks",
+      "title": "Dehumanization Frameworks",
+      "home": "https://id.linkcite.org/frameworks/scheme",
+      "sources": ["../struggle-against-dehumanization/build/dehumanization-frameworks.ttl"],
+      "build": "Run python scripts/build_framework_scheme.py in struggle-against-dehumanization."
+    },
+    {
+      "path": "index",
+      "title": "Concept Index",
+      "home": "https://id.linkcite.org/index/scheme",
+      "publish": false,
+      "sources": ["../terminology-mcp/tmp/concept-index/concept-index.ttl"],
+      "build": "The concept index is a draft in terminology-mcp/tmp/concept-index."
+    }
+  ]
+}

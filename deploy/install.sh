@@ -1,0 +1,67 @@
+#!/bin/sh
+# Runs as root on the LXC, from tools/deploy.py, with RELEASE_ID set and the release
+# unpacked in /opt/id-linkcite/releases/$RELEASE_ID. Loads a new store, switches both
+# services to it, and checks it answers; on failure the previous release comes back.
+set -eu
+umask 0022
+: "${RELEASE_ID:?}"
+RELEASE=/opt/id-linkcite/releases/$RELEASE_ID
+STORE=/var/lib/id-linkcite/store-$RELEASE_ID
+test -x /usr/local/bin/oxigraph || { echo 'Oxigraph is missing from /usr/local/bin/oxigraph.' >&2; exit 1; }
+command -v node >/dev/null && command -v npm >/dev/null || { apt-get update -q && apt-get install -y -q nodejs npm; }
+node -e 'if (Number(process.versions.node.split(".")[0]) < 20) process.exit(1)' || { echo 'Node.js 20 or later is needed.' >&2; exit 1; }
+exec 9>/var/lock/id-linkcite-deploy.lock
+flock -n 9 || { echo 'Another deployment is already running.' >&2; exit 1; }
+
+getent group id-linkcite >/dev/null || groupadd --system id-linkcite
+id id-linkcite >/dev/null 2>&1 || useradd --system --gid id-linkcite --home-dir /var/lib/id-linkcite --shell /usr/sbin/nologin id-linkcite
+install -d -m 0755 -o id-linkcite -g id-linkcite /var/lib/id-linkcite
+
+cd "$RELEASE"
+npm ci --omit=dev --no-audit --no-fund
+chown -R root:root "$RELEASE"
+chmod -R a+rX,go-w "$RELEASE"
+rm -rf "$STORE"
+runuser -u id-linkcite -- /usr/local/bin/oxigraph load --location "$STORE" --file "$RELEASE/build/public.nq"
+runuser -u id-linkcite -- /usr/local/bin/oxigraph optimize --location "$STORE"
+
+# The cloned server's writable Oxigraph held 7878 on every interface; this release takes that port.
+if systemctl is-enabled --quiet oxigraph 2>/dev/null || systemctl is-active --quiet oxigraph 2>/dev/null; then
+  systemctl disable --now oxigraph
+  echo 'Stopped and disabled the old oxigraph service; its data in /var/lib/oxigraph is untouched.'
+fi
+
+previous=$(readlink /opt/id-linkcite/current || true)
+previous_store=$(readlink /var/lib/id-linkcite/store || true)
+switch() {  # release store
+  ln -sfn "$1" /opt/id-linkcite/current.next && mv -Tf /opt/id-linkcite/current.next /opt/id-linkcite/current
+  ln -sfn "$2" /var/lib/id-linkcite/store.next && mv -Tf /var/lib/id-linkcite/store.next /var/lib/id-linkcite/store
+  systemctl restart id-linkcite-oxigraph id-linkcite
+}
+install -m 0644 "$RELEASE/deploy/id-linkcite-oxigraph.service" "$RELEASE/deploy/id-linkcite.service" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable id-linkcite-oxigraph id-linkcite
+switch "$RELEASE" "$STORE"
+
+home=$(sed -n 's/.*"home": "https:\/\/id\.linkcite\.org\(\/[^"]*\)".*/\1/p' "$RELEASE/build/manifest.json" | head -1)
+healthy=0
+for attempt in $(seq 1 30); do
+  if curl -fsS -o /dev/null -H 'Host: id.linkcite.org' -H 'X-Forwarded-Proto: https' -H 'Accept: text/turtle' "http://127.0.0.1:7878$home"; then healthy=1; break; fi
+  sleep 1
+done
+if test "$healthy" != 1; then
+  journalctl -u id-linkcite -u id-linkcite-oxigraph -n 30 --no-pager || true
+  if test -n "$previous" && test -n "$previous_store"; then
+    switch "$previous" "$previous_store"
+    echo "Release $RELEASE_ID did not answer for $home; restored $previous." >&2
+  else
+    systemctl stop id-linkcite id-linkcite-oxigraph
+    echo "Release $RELEASE_ID did not answer for $home; services stopped." >&2
+  fi
+  exit 1
+fi
+
+# Keep the three newest releases and stores, for rollback.
+ls -1dt /opt/id-linkcite/releases/* | tail -n +4 | xargs -r rm -rf
+ls -1dt /var/lib/id-linkcite/store-* | tail -n +4 | xargs -r rm -rf
+echo "Healthy release $RELEASE_ID: $(grep -c '' "$RELEASE/build/public.nq") quads, answering on :7878"
