@@ -4,6 +4,7 @@
   "private": true,
   "description": "Serves https://id.linkcite.org: each IRI resolves to its public description, from a read-only Oxigraph store, through Trifid",
   "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "engines": {
     "node": ">=22.12"
   },

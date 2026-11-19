@@ -60,3 +60,8 @@ Add an entry to `vocabularies.json`: its `path` (the first segment under the roo
 - Never change an IRI once it's minted, and never put a version in one. Rename labels freely.
 - Terms take slash paths (`/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/patterns/vocab#AntiPattern`).
 - Before the book is published, serve labels and links only.
+
+## Licensing
+
+- **Software** (the scripts, configuration and deployment files here): [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+- **Data** (the vocabulary descriptions published at `https://id.linkcite.org/`): [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](LICENSE-DATA.md).
