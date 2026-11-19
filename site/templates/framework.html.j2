@@ -1,0 +1,28 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import term_list, pager %}
+{% block title %}{{ t.code }} {{ t.label }}{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="/frameworks/scheme">{{ content.title }}</a>{% if group %} / <a href="/frameworks/scheme#{{ group.id }}">{{ group.title }}</a>{% endif %}</span>{% endblock %}
+{% block main %}
+<article class="entry">
+  <p class="kind"><span class="badge framework">Framework {{ t.code }}</span></p>
+  <h1>{{ t.label }}</h1>
+  {% if t.alt %}<p class="placement">Also called {{ t.alt | join(', ') }}</p>{% endif %}
+  {% if focus %}<p class="lede">{{ focus }}</p>{% endif %}
+  <div class="pending">{{ pending | md }}</div>
+
+  {% for role in roles %}
+  <section class="facet">
+    <h2>{{ role.title }}</h2>
+    <p class="blurb">{{ role.blurb }}</p>
+    {{ term_list(role.terms, True) }}
+  </section>
+  {% endfor %}
+
+  {{ pager(previous, next, 'Frameworks') }}
+
+  <section class="cite">
+    <h2>Cite this framework</h2>
+    <p>“{{ t.code }} {{ t.label }}.” In <cite>{{ content.title }}</cite>, from <cite>The Struggle Against Dehumanization</cite>. <a href="{{ iri }}">{{ iri }}</a></p>
+  </section>
+</article>
+{% endblock %}

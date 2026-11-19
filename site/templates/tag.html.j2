@@ -1,0 +1,25 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import pattern_list %}
+{% block title %}{{ tag.name }}{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="/patterns/scheme">{{ content.title }}</a> / <a href="{{ vocabulary.href }}">{{ vocabulary.title }}</a>{% if broader %} / <a href="{{ broader.href }}">{{ broader.name }}</a>{% endif %}</span>{% endblock %}
+{% block main %}
+<div class="hero">
+  <p class="kind"><span class="badge cluster">{{ vocabulary.singular }}</span></p>
+  <h1>{{ tag.name }}</h1>
+  <p class="placement">{% if count %}{{ count }} pattern{{ 's' if count != 1 }} in the catalog{% else %}No pattern in the catalog has this tag itself{% endif %}{% if broader %}, under <a href="{{ broader.href }}">{{ broader.name }}</a>{% endif %}.</p>
+</div>
+{% if anti %}<section class="facet"><h2>Anti-patterns</h2>{{ pattern_list(anti) }}</section>{% endif %}
+{% if restorative %}<section class="facet"><h2>Restorative patterns</h2>{{ pattern_list(restorative) }}</section>{% endif %}
+{% if narrower %}
+<section class="facet"><h2>More specific</h2>
+  <ul class="chips">{% for n in narrower %}<li><a href="{{ n.href }}">{{ n.name }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% if with_it %}
+<section class="facet"><h2>Often together with</h2>
+  <p class="blurb">Other {{ vocabulary.title | lower }} on the same patterns.</p>
+  <ul class="chips">{% for t, n in with_it %}<li><a href="{{ t.href }}">{{ t.name }} <span class="n">{{ n }}</span></a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+<p class="more"><a href="{{ vocabulary.href }}">All {{ vocabulary.title | lower }}</a></p>
+{% endblock %}

@@ -116,3 +116,26 @@ ul.chips a:hover { border-color: var(--link); color: var(--link); }
 .cite { background: var(--note-bg); border-radius: 10px; padding: 0.9rem 1.2rem; margin: 2rem 0 0; }
 .cite h2 { font-size: 1.05rem; margin: 0 0 0.3rem; }
 .cite p { margin: 0; overflow-wrap: anywhere; }
+
+/* Tags and frameworks */
+ul.chips .n { color: var(--muted); font-size: 0.8rem; margin-left: 0.15rem; }
+ul.chips a.unused { color: var(--muted); border-style: dashed; }
+h2 .n { color: var(--muted); font: 400 0.9rem var(--sans); }
+.fine { font-size: 0.85rem; margin-top: 1.5rem; }
+.more { margin-top: 2rem; }
+.badge.framework { color: var(--link); background: var(--note-bg); }
+.badge.role { color: var(--muted); border: 1px solid var(--rule); }
+.part-title.plane { border-bottom-color: var(--link); }
+ul.cards { list-style: none; padding: 0; margin: 0.5rem 0 0; display: grid; gap: 0.75rem; }
+.card { border: 1px solid var(--rule); border-radius: 10px; padding: 0.8rem 1rem; background: var(--surface); }
+.card > a { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; text-decoration: none; }
+.card p { margin: 0.3rem 0 0; }
+.tally { color: var(--muted); font-size: 0.85rem; }
+.code { font: 600 0.8rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); margin-right: 0.35rem; white-space: nowrap; }
+.card .code { font-size: 0.9rem; color: var(--link); }
+ul.terms { list-style: none; padding: 0; margin: 0.3rem 0 0; }
+ul.terms li { margin: 0.35rem 0; }
+ul.terms ul.terms { padding-left: 1.2rem; border-left: 2px solid var(--rule); margin: 0.3rem 0 0.6rem 0.3rem; }
+.here { font-weight: 600; }
+.browse { margin: 0.8rem 0 0; font-size: 0.95rem; }
+.facet h3 { font-size: 1.05rem; margin: 1.2rem 0 0.3rem; }

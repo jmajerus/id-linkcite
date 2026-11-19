@@ -1,0 +1,34 @@
+{% extends 'base.html.j2' %}
+{% block title %}{{ content.title }}{% endblock %}
+{% block crumbs %}<span class="crumb">/ {{ content.title }}</span>{% endblock %}
+{% block main %}
+<div class="hero">
+  <h1>{{ content.title }}</h1>
+  <p class="tagline">{{ content.tagline }}</p>
+  <p class="counts"><span class="badge framework">7 frameworks</span> <span class="version">{{ total }} named mechanisms, dynamics, signs and responses</span></p>
+</div>
+
+<div class="intro">{{ content.intro | md }}</div>
+
+<aside class="note">
+  <h2>{{ content.reading_title }}</h2>
+  {{ content.reading | md }}
+</aside>
+
+{% for group in groups %}
+<section class="part" id="{{ group.id }}">
+  <h2 class="part-title{% if group.id in ('distortion', 'magnification') %} plane{% endif %}">{{ group.title }}</h2>
+  <p class="part-intro">{{ group.blurb }}</p>
+  <ul class="cards">
+    {% for card in group.cards %}
+    <li class="card">
+      <a href="{{ card.term.href }}"><span class="code">{{ card.term.code }}</span> {{ card.term.label }}</a>
+      {% if card.focus %}<p>{{ card.focus }}</p>{% endif %}
+      {% if card.counts %}<p class="tally">{% for name, n in card.counts %}{{ n }} {{ name | lower }}{{ ' · ' if not loop.last }}{% endfor %}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% if group.id == 'magnification' %}<p class="blurb fine">{{ content.planes_note }}</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

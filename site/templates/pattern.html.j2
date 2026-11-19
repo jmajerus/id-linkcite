@@ -23,7 +23,7 @@
   <section class="facet">
     <h2>{{ title }}</h2>
     {% if note %}<p class="blurb">{{ note }}</p>{% endif %}
-    <ul class="chips">{% for t in tags %}<li><a href="{{ t.href }}">{{ t.label | replace('-', ' ') }}</a></li>{% endfor %}</ul>
+    <ul class="chips">{% for t in tags %}<li><a href="{{ t.href }}">{{ t.name }}</a></li>{% endfor %}</ul>
   </section>
   {% endif %}
 {% endmacro %}

@@ -1,0 +1,87 @@
+# Text for the Dehumanization Frameworks pages (https://id.linkcite.org/frameworks/...).
+# Paragraphs are separated by blank lines. Everything else on the pages comes from the data.
+
+title = "Dehumanization Frameworks"
+tagline = "Diagnostic lenses for the distinct ways people come to be treated as objects, threats or expendable."
+
+intro = """
+This is the framework of frameworks from *The Struggle Against Dehumanization* (Annex 1). Its starting point is
+that dehumanization is not a single failure but a family of failures, arising through distinct pathways that
+often interact.
+
+Each framework is a lens on one pathway: how knowing becomes distorted, how values are reordered, how roles and
+procedures make harm routine, how belonging draws moral boundaries, how correction itself stops working, and the
+rare case where destruction comes to be admired. Within each, the book names **mechanisms**, the **dynamics** that
+stabilize them, the **warning signs** to look for, and the **limits and responses** that remain.
+"""
+
+reading_title = "How to read the frameworks"
+reading = """
+The frameworks are diagnostic tools, not moral verdicts or predictions. They ask *how* harm becomes possible,
+not who is to blame. They are meant to be applied selectively, combined, or set aside; sometimes declining to
+apply one is the more responsible choice.
+
+The [Dehumanization Patterns](/patterns/scheme) catalog names the recurring forms these pathways take in practice.
+"""
+
+pending = """
+This {noun} is described in Annex 1 of *The Struggle Against Dehumanization*. Its description will appear here
+when the book is published.
+"""
+
+# The overview's arrangement, after the book's own orientation. Frameworks are named by code.
+[[groups]]
+id = "start"
+title = "Start here"
+blurb = "How the frameworks fit together, and the limits on using them."
+frameworks = ["DF0"]
+
+[[groups]]
+id = "distortion"
+title = "The distortion plane"
+blurb = "Internal miscalibration: how knowing and valuing become distorted, so that harm becomes thinkable or justifiable."
+frameworks = ["DF1", "DF2"]
+
+[[groups]]
+id = "magnification"
+title = "The magnification plane"
+blurb = "Amplification and constraint: how ordinary judgments, distorted or not, are magnified, routinized, insulated or made costly to resist."
+frameworks = ["DF3", "DF4"]
+
+[[groups]]
+id = "beyond"
+title = "Outside the planes"
+blurb = "Two frameworks that differ in kind. Neither is a later stage of the others, and DF6 is not what DF5 becomes."
+frameworks = ["DF5", "DF6"]
+
+planes_note = "The planes are orientation aids, not stages or a causal order. Frameworks interact within and across them."
+
+[frameworks.DF0]
+focus = "What the frameworks are for, how they are structured, and when not to use them."
+[frameworks.DF1]
+focus = "How reality is perceived, interpreted and made intelligible: failures of knowing, sense-making and interpretive trust."
+[frameworks.DF2]
+focus = "How values are ordered, justified and protected: failures of moral prioritization and ethical restraint."
+[frameworks.DF3]
+focus = "How dehumanization becomes routine through roles, procedures and systems, displacing and diffusing responsibility."
+[frameworks.DF4]
+focus = "How belonging and affiliation shape moral and epistemic boundaries, through alignment pressure and exclusion."
+[frameworks.DF5]
+focus = "Where correction itself breaks down: systems that no longer respond to feedback, appeal or reform."
+[frameworks.DF6]
+focus = "A boundary condition: harm that is affirmed, rewarded or celebrated. A sentinel to watch for, not a forecast."
+
+# Roles, from the scheme's collections. Terms in no collection are listed under "other".
+[roles]
+mechanisms = "Mechanisms"
+stabilization = "Stabilizing dynamics"
+signals = "Warning signs and signals"
+responses = "Limits, responses and exit conditions"
+other = "Use and limits"
+
+[role_blurbs]
+mechanisms = "The pathways through which this framework sees dehumanization arise."
+stabilization = "How a distortion, once present, is reinforced and protected from correction."
+signals = "Observable indicators, never sufficient on their own, that the framework may apply."
+responses = "Where intervention fails, and what ethical response or restoration remains possible."
+other = "Guidance on applying the frameworks with restraint."

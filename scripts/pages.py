@@ -4,7 +4,9 @@ Pages are generated only from what build.py has already filtered as public, plus
 site/content/. The pages plugin (trifid/plugins/pages.js) serves them to browsers; tools asking for RDF
 still get Trifid's own responses.
 """
+import re
 import tomllib
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,7 +32,7 @@ def path_of(iri):
     return str(iri)[len(SITE):]
 
 
-@dataclass
+@dataclass(eq=False)
 class Tag:
     iri: str
     label: str
@@ -38,6 +40,17 @@ class Tag:
     @property
     def href(self):
         return path_of(self.iri)
+
+    @property
+    def name(self):
+        """The label as a reader sees it: hyphens to spaces, first letter capitalized."""
+        text = self.label.replace('-', ' ')
+        return text[:1].upper() + text[1:]
+
+
+def natural(code):
+    """A sort key that puts DF1-2 before DF1-10."""
+    return [int(part) if part.isdigit() else part for part in re.split(r'(\d+)', code)]
 
 
 @dataclass(eq=False)
@@ -111,6 +124,10 @@ class Catalog:
             p.contexts = tags(node, PC.hasContext)
             p.functions = tags(node, PC.hasFunction)
             p.counter_tags = tags(node, PC.hasCounter)
+        self.tagged = defaultdict(list)  # tag IRI -> patterns
+        for p in self.patterns.values():
+            for tag in (*p.contexts, *p.functions, *p.counter_tags):
+                self.tagged[tag.iri].append(p)
         for node, p in self.patterns.items():
             p.answered_by.sort(key=sort_key)
             answering = {*p.answers, *p.answered_by}
@@ -172,11 +189,156 @@ class Catalog:
             }
 
 
+    def tag_pages(self):
+        """A page for each tag vocabulary that patterns use, and for each of its tags."""
+        g = self.graph
+        for key, text in self.content['tags'].items():
+            scheme = URIRef(f'{self.root}/tags/{key}')
+            tags = {node: Tag(str(node), self.label(node)) for node in g.subjects(SKOS.inScheme, scheme)}
+            broader = {t: tags.get(g.value(node, SKOS.broader)) for node, t in tags.items()}
+            narrower = defaultdict(list)
+            for t, parent in broader.items():
+                if parent:
+                    narrower[parent].append(t)
+            count = lambda t: len(self.tagged.get(t.iri, []))
+            ordered = lambda items: sorted(items, key=lambda t: t.name.lower())
+            vocabulary = {'key': key, 'iri': str(scheme), 'href': path_of(scheme), **text}
+            top = ordered(t for t in tags.values() if not broader[t])
+            yield f'patterns/tags/{key}.html', 'tag-vocabulary.html.j2', {
+                'content': self.content, 'iri': str(scheme), 'vocabulary': vocabulary, 'count': count,
+                'top': top, 'narrower': {t: ordered(n) for t, n in narrower.items()},
+                'hierarchical': bool(narrower), 'used': sum(1 for t in tags.values() if count(t)), 'total': len(tags),
+                'in_use': ordered(t for t in tags.values() if count(t)),
+            }
+            for t in tags.values():
+                patterns = sorted(self.tagged.get(t.iri, []), key=sort_key)
+                # Other tags of this vocabulary on the same patterns, most frequent first.
+                vocab_tags = {x.iri: x for x in tags.values()}
+                together = Counter(tag.iri for p in patterns for tag in (*p.contexts, *p.functions, *p.counter_tags)
+                                   if tag.iri != t.iri and tag.iri in vocab_tags)
+                with_it = [(vocab_tags[i], n) for i, n in sorted(together.items(), key=lambda item: (-item[1], vocab_tags[item[0]].name))][:10]
+                yield f'patterns/tags/{key}/{t.href.rsplit("/", 1)[1]}.html', 'tag.html.j2', {
+                    'content': self.content, 'iri': t.iri, 'tag': t, 'vocabulary': vocabulary,
+                    'anti': [p for p in patterns if p.kind == 'anti'], 'restorative': [p for p in patterns if p.kind == 'restorative'],
+                    'broader': broader[t], 'narrower': ordered(narrower.get(t, [])), 'with_it': with_it, 'count': len(patterns),
+                }
+
+
+@dataclass(eq=False)
+class Term:
+    iri: str
+    label: str
+    code: str
+    alt: list
+    role: str = 'other'
+    parent: 'Term | None' = None
+    children: list = field(default_factory=list)
+    related: list = field(default_factory=list)
+
+    @property
+    def href(self):
+        return path_of(self.iri)
+
+    @property
+    def framework(self):
+        term = self
+        while term.parent:
+            term = term.parent
+        return term
+
+
+class Frameworks:
+    """The frameworks scheme as readers see it: DF0–DF6, their terms by role, and the planes."""
+
+    ROLES = ['mechanisms', 'stabilization', 'signals', 'responses', 'other']
+
+    def __init__(self, graph: Graph):
+        self.graph = graph
+        self.content = tomllib.loads((ROOT / 'site/content/frameworks.toml').read_text(encoding='utf-8'))
+        self.root = SITE + '/frameworks'
+        self.scheme = URIRef(self.root + '/scheme')
+        g = graph
+        self.terms = {}
+        for node in set(g.subjects(SKOS.inScheme, self.scheme)):
+            code = str(g.value(node, SKOS.notation) or '')
+            self.terms[node] = Term(str(node), str(g.value(node, SKOS.prefLabel) or node), code,
+                                    sorted(str(a) for a in g.objects(node, SKOS.altLabel)))
+        by_code = lambda items: sorted(items, key=lambda t: natural(t.code))
+        for key in self.ROLES[:-1]:
+            for member in g.objects(URIRef(f'{self.root}/collections/{key}'), SKOS.member):
+                if member in self.terms:
+                    self.terms[member].role = key
+        for node, term in self.terms.items():
+            term.parent = self.terms.get(g.value(node, SKOS.broader))
+            term.related = by_code({self.terms[r] for r in [*g.objects(node, SKOS.related), *g.subjects(SKOS.related, node)] if r in self.terms})
+        for term in self.terms.values():
+            if term.parent:
+                term.parent.children.append(term)
+        for term in self.terms.values():
+            term.children = by_code(term.children)
+        self.frameworks = by_code(t for t in self.terms.values() if not t.parent)
+        self.by_code = {t.code: t for t in self.terms.values()}
+
+    def roles_of(self, term):
+        """A term's children, grouped by role in the book's order."""
+        groups = []
+        for key in self.ROLES:
+            members = [c for c in term.children if c.role == key]
+            if members:
+                groups.append({'key': key, 'title': self.content['roles'][key], 'blurb': self.content['role_blurbs'][key], 'terms': members})
+        return groups
+
+    def descendants(self, term):
+        for child in term.children:
+            yield child
+            yield from self.descendants(child)
+
+    def overview(self):
+        c = self.content
+        cards = lambda codes: [{'term': self.by_code[code], 'focus': c['frameworks'].get(code, {}).get('focus', ''),
+                                'counts': [(c['roles'][k], n) for k in self.ROLES[:-1]
+                                           if (n := sum(1 for d in self.descendants(self.by_code[code]) if d.role == k))]}
+                               for code in codes if code in self.by_code]
+        groups = [{**group, 'cards': cards(group['frameworks'])} for group in c['groups']]
+        listed = {code for group in c['groups'] for code in group['frameworks']}
+        missing = [t.code for t in self.frameworks if t.code not in listed]
+        if missing:
+            raise SystemExit('Frameworks missing from site/content/frameworks.toml groups: ' + ', '.join(missing))
+        return 'frameworks/scheme.html', 'frameworks-overview.html.j2', {
+            'content': c, 'iri': str(self.scheme), 'groups': groups, 'total': len(self.terms) - len(self.frameworks),
+        }
+
+    def pages(self):
+        c = self.content
+        group_of = {code: group for group in c['groups'] for code in group['frameworks']}
+        for i, framework in enumerate(self.frameworks):
+            yield f'frameworks/{framework.href.rsplit("/", 1)[1]}.html', 'framework.html.j2', {
+                'content': c, 'iri': framework.iri, 't': framework, 'roles': self.roles_of(framework),
+                'focus': c['frameworks'].get(framework.code, {}).get('focus', ''), 'group': group_of.get(framework.code),
+                'previous': self.frameworks[i - 1] if i > 0 else None,
+                'next': self.frameworks[i + 1] if i < len(self.frameworks) - 1 else None,
+                'pending': c['pending'].replace('{noun}', 'framework'),
+            }
+        for term in self.terms.values():
+            if not term.parent:
+                continue
+            siblings = [s for s in term.parent.children if s.role == term.role]
+            i = siblings.index(term)
+            yield f'frameworks/{term.href.rsplit("/", 1)[1]}.html', 'framework-term.html.j2', {
+                'content': c, 'iri': term.iri, 't': term, 'role': c['roles'][term.role], 'role_blurb': c['role_blurbs'][term.role],
+                'roles': self.roles_of(term), 'siblings': siblings,
+                'previous': siblings[i - 1] if i > 0 else None, 'next': siblings[i + 1] if i < len(siblings) - 1 else None,
+                'pending': c['pending'].replace('{noun}', 'term'),
+            }
+
+
 def write_pages(dataset, base, out: Path):
     env = environment()
     catalog = Catalog(dataset.graph(URIRef(base + 'patterns')))
+    frameworks = Frameworks(dataset.graph(URIRef(base + 'frameworks')))
     written = []
-    for path, template, context in [catalog.overview(), *catalog.pattern_pages()]:
+    for path, template, context in [catalog.overview(), *catalog.pattern_pages(), *catalog.tag_pages(),
+                                    frameworks.overview(), *frameworks.pages()]:
         target = out / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(env.get_template(template).render(**context), encoding='utf-8')

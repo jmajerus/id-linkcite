@@ -1,0 +1,26 @@
+{% macro pattern_list(items) %}
+<ul class="patterns">
+  {% for p in items %}
+  <li class="pattern {{ p.kind }}"><a href="{{ p.href }}">{{ p.label }}</a>{% if p.provisional %} <span class="badge provisional">Provisional</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro term_list(items, nested=False) %}
+<ul class="terms">
+  {% for t in items %}
+  <li><a href="{{ t.href }}"><span class="code">{{ t.code }}</span> {{ t.label }}</a>
+    {% if nested and t.children %}{{ term_list(t.children, True) }}{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro pager(previous, next, label) %}
+{% if previous or next %}
+<nav class="pager" aria-label="{{ label }}">
+  {% if previous %}<a class="prev" href="{{ previous.href }}"><span>Previous</span>{% if previous.code %}{{ previous.code }} {% endif %}{{ previous.label }}</a>{% else %}<span></span>{% endif %}
+  {% if next %}<a class="next" href="{{ next.href }}"><span>Next</span>{% if next.code %}{{ next.code }} {% endif %}{{ next.label }}</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

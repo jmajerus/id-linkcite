@@ -82,3 +82,17 @@ answers = "Anti-patterns it counters or interrupts."
 contexts = "Settings where this pattern shows up."
 functions = "What the pattern does to the people it affects."
 counter_tags = "Design choices that work against it."
+
+# Tag vocabularies that patterns use, by the last segment of the vocabulary's IRI (/patterns/tags/<key>).
+[tags.context]
+title = "Settings"
+singular = "Setting"
+blurb = "Where the catalog's patterns show up: the institutions, technologies and situations in which the book observes them."
+[tags.function]
+title = "What patterns do"
+singular = "What it does"
+blurb = "What a pattern does to the people it affects. So far the book gives these for its predatory choice designs."
+[tags.counter]
+title = "What works against them"
+singular = "Works against"
+blurb = "Design choices that work against a pattern. So far the book gives these for its predatory choice designs."

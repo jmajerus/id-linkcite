@@ -1,0 +1,48 @@
+{% extends 'base.html.j2' %}
+{% from '_macros.html.j2' import term_list, pager %}
+{% block title %}{{ t.code }} {{ t.label }}{% endblock %}
+{% block crumbs %}{% set fw = t.framework %}<span class="crumb">/ <a href="/frameworks/scheme">{{ content.title }}</a> / <a href="{{ fw.href }}">{{ fw.code }} {{ fw.label }}</a>{% if t.parent is not sameas fw %} / <a href="{{ t.parent.href }}">{{ t.parent.code }}</a>{% endif %}</span>{% endblock %}
+{% block main %}
+{% set fw = t.framework %}
+<article class="entry">
+  <p class="kind"><span class="badge framework">{{ t.code }}</span> <span class="badge role">{{ role }}</span></p>
+  <h1>{{ t.label }}</h1>
+  <p class="placement">
+    In <a href="{{ fw.href }}">{{ fw.code }} {{ fw.label }}</a>{% if t.parent is not sameas fw %}, under <a href="{{ t.parent.href }}">{{ t.parent.code }} {{ t.parent.label }}</a>{% endif %}.
+    {{ role_blurb }}
+  </p>
+  <div class="pending">{{ pending | md }}</div>
+
+  {% for group in roles %}
+  <section class="facet">
+    <h2>{{ group.title }} within it</h2>
+    {{ term_list(group.terms, True) }}
+  </section>
+  {% endfor %}
+
+  {% if t.related %}
+  <section class="facet">
+    <h2>Related</h2>
+    {{ term_list(t.related) }}
+  </section>
+  {% endif %}
+
+  {% if siblings | length > 1 %}
+  <section class="facet">
+    <h2>{{ role }} alongside it</h2>
+    <ul class="terms">
+      {% for s in siblings %}
+      <li>{% if s is sameas t %}<span class="here"><span class="code">{{ s.code }}</span> {{ s.label }}</span>{% else %}<a href="{{ s.href }}"><span class="code">{{ s.code }}</span> {{ s.label }}</a>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {{ pager(previous, next, role) }}
+
+  <section class="cite">
+    <h2>Cite this term</h2>
+    <p>“{{ t.code }} {{ t.label }}.” In <cite>{{ content.title }}</cite>, from <cite>The Struggle Against Dehumanization</cite>. <a href="{{ iri }}">{{ iri }}</a></p>
+  </section>
+</article>
+{% endblock %}
