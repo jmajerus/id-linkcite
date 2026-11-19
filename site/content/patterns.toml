@@ -1,0 +1,68 @@
+# Text for the Dehumanization Patterns overview (https://id.linkcite.org/patterns/scheme).
+# Paragraphs are separated by blank lines. Everything else on the page comes from the data.
+
+title = "Dehumanization Patterns"
+tagline = "Recurring ways people come to be treated as less than people, and the practices that interrupt them."
+
+intro = """
+This is the pattern catalog from *The Struggle Against Dehumanization*. Each entry names a recurring configuration
+that shows up across technical systems, institutions and everyday workflows, often without anyone intending harm.
+
+**Anti-patterns** are the ways dehumanization is produced, amplified or made routine: a choice designed to trap,
+a feed that rewards outrage, a procedure that quietly takes the place of judgment. **Restorative patterns** are the
+practices that interrupt them and help re-anchor a system in human purpose.
+
+Giving these patterns names makes them easier to notice, discuss and resist.
+"""
+
+reading_title = "How to read the catalog"
+reading = """
+Patterns describe; they don't diagnose. Recognizing one tells you what is happening, not why, who is to blame,
+or what should be done. Treat the catalog as a set of lenses and a shared vocabulary, not a checklist.
+
+The book reads each pattern alongside the [Dehumanization Frameworks](/frameworks/scheme), which explain the
+conditions under which these patterns take hold.
+"""
+
+anti_intro = "Grouped as in Annex 2 of the book. Where a restorative pattern answers one, it is listed beneath it."
+restorative_intro = "Practices that interrupt dehumanization, restoring recognition, agency and judgment."
+
+proposed_title = "Proposed"
+proposed = "Candidates under review, not yet part of the published catalog."
+
+[[sections]]
+collection = "section-predatory-choice-architecture"
+numeral = "I"
+blurb = "Designs that deliberately manipulate choice, consent or the ability to leave."
+
+[[sections]]
+collection = "section-algorithmic-interface-mediated-amplification"
+numeral = "II"
+blurb = "Technical systems that intensify emotion, distance or distortion."
+
+[[sections]]
+collection = "section-epistemic-capture-false-authority"
+numeral = "III"
+blurb = "How truth, trust and legitimacy get reassigned."
+
+[[sections]]
+collection = "section-organizational-psychodynamic-patterns"
+numeral = "IV"
+blurb = "Patterns rooted in identity, idealization, ritual and an organization's inner drama."
+
+[[sections]]
+collection = "section-procedural-bureaucratic-drift-patterns"
+numeral = "V"
+blurb = "Where structure replaces judgment, and procedure absorbs morality."
+
+[[sections]]
+collection = "section-cross-cutting-micro-patterns"
+numeral = "VI"
+blurb = "Small patterns that recur across every category, best used as interpretive lenses."
+
+# Clusters: a pattern whose narrower patterns are listed as a group of their own.
+[clusters.moral-evasion-micro-patterns]
+blurb = "Moves that keep the appearance of ethical concern while quietly displacing responsibility, judgment or agency."
+
+[clusters.moral-injury-prevention]
+blurb = "Small preventive practices that work inside larger restorative patterns, interrupting harm before it has to be justified."

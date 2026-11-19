@@ -14,6 +14,7 @@
     "deploy": "python3 tools/deploy.py"
   },
   "dependencies": {
+    "mimeparse": "0.1.4",
     "trifid": "6.1.0"
   }
 }

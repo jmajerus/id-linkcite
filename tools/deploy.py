@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HOST = os.environ.get('ID_LINKCITE_HOST', 'root@id-linkcite.localdomain')
-FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs']
+FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'site/assets', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs', 'build/pages']
 INSPECT = r'''
 for unit in id-linkcite id-linkcite-oxigraph oxigraph; do printf '%-22s %s %s\n' "$unit" "$(systemctl is-enabled $unit 2>/dev/null || true)" "$(systemctl is-active $unit 2>/dev/null || true)"; done
 echo "release: $(readlink /opt/id-linkcite/current || echo none)"
@@ -34,7 +34,7 @@ def ssh(command, data=None):
 
 def release_id():
     commit = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, text=True).strip()
-    dirty = subprocess.run(['git', 'diff', '--quiet', 'HEAD', '--', *FILES[:4]], cwd=ROOT).returncode != 0
+    dirty = subprocess.run(['git', 'diff', '--quiet', 'HEAD'], cwd=ROOT).returncode != 0
     return time.strftime('%Y%m%d-%H%M%S') + '-' + commit + ('-dirty' if dirty else '')
 
 

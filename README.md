@@ -19,6 +19,12 @@ On the LXC `id-linkcite`, behind the Cloudflare tunnel for `id.linkcite.org`:
 
 Trifid uses the official Node.js 22 runtime in `/opt/id-linkcite/runtime`, which the first deployment installs (checksum-verified). Both run as the unprivileged `id-linkcite` account, as the systemd units in `deploy/`. Each deployment loads a fresh store from `build/public.nq`; the previous two releases and stores are kept for rollback.
 
+## Reader pages
+
+Browsers get pages written for people, where one exists; tools asking for Turtle or JSON-LD still get data from the same IRI. `scripts/pages.py` writes them into `build/pages/` from the public data and the text in `site/content/`, using the Jinja2 templates in `site/templates/` and the stylesheet in `site/assets/`. `trifid/plugins/pages.js` serves them; any IRI without a page falls back to Trifid's generic view.
+
+So far there is one: the patterns overview, `/patterns/scheme`. Edit `site/content/patterns.toml` to change its introduction or the section and cluster descriptions, then build and deploy. Pages carry `noindex` until the book is published (`site/templates/base.html.j2`).
+
 ## What is public
 
 `scripts/build.py` filters each vocabulary's sources before anything leaves your machine:

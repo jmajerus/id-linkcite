@@ -22,6 +22,19 @@ globals:
       url: /query
 
 plugins:
+  # Reader pages for browsers (build/pages); RDF requests fall through to the entity renderer.
+  pages:
+    module: ./trifid/plugins/pages.js
+    order: 10
+    config:
+      directory: file:../build/pages
+
+  assets:
+    module: trifid-core/plugins/static.js
+    paths: /assets
+    config:
+      directory: file:../site/assets
+
   welcome:
     module: trifid-core/plugins/view.js
     paths: /
