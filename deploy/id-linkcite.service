@@ -8,7 +8,7 @@ User=id-linkcite
 Group=id-linkcite
 WorkingDirectory=/opt/id-linkcite/current
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /opt/id-linkcite/current/node_modules/trifid/dist/server.js --config trifid/config.yaml
+ExecStart=/opt/id-linkcite/runtime/bin/node /opt/id-linkcite/current/node_modules/trifid/dist/server.js --config trifid/config.yaml
 Restart=always
 RestartSec=5
 NoNewPrivileges=yes

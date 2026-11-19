@@ -8,8 +8,23 @@ umask 0022
 RELEASE=/opt/id-linkcite/releases/$RELEASE_ID
 STORE=/var/lib/id-linkcite/store-$RELEASE_ID
 test -x /usr/local/bin/oxigraph || { echo 'Oxigraph is missing from /usr/local/bin/oxigraph.' >&2; exit 1; }
-command -v node >/dev/null && command -v npm >/dev/null || { apt-get update -q && apt-get install -y -q nodejs npm; }
-node -e 'if (Number(process.versions.node.split(".")[0]) < 20) process.exit(1)' || { echo 'Node.js 20 or later is needed.' >&2; exit 1; }
+# Trifid's dependencies need Node.js 22.12+, newer than Debian's, so the official
+# Node.js 22 runtime is installed under /opt/id-linkcite/runtime, checksum-verified.
+NODE=/opt/id-linkcite/runtime/bin/node
+if ! test -x "$NODE" || ! "$NODE" -e 'const [a, b] = process.versions.node.split(".").map(Number); process.exit(a > 22 || (a === 22 && b >= 12) ? 0 : 1)'; then
+  dist=https://nodejs.org/dist/latest-v22.x
+  tmp=$(mktemp -d)
+  curl -fsS "$dist/SHASUMS256.txt" -o "$tmp/SHASUMS256.txt"
+  name=$(grep -oE 'node-v22\.[0-9]+\.[0-9]+-linux-x64\.tar\.xz' "$tmp/SHASUMS256.txt" | head -1)
+  curl -fsS "$dist/$name" -o "$tmp/$name"
+  (cd "$tmp" && grep " $name\$" SHASUMS256.txt | sha256sum -c --quiet)
+  install -d -m 0755 /opt/id-linkcite/runtimes
+  tar -xJf "$tmp/$name" -C /opt/id-linkcite/runtimes
+  ln -sfn "/opt/id-linkcite/runtimes/${name%.tar.xz}" /opt/id-linkcite/runtime
+  rm -rf "$tmp"
+  echo "Installed $("$NODE" --version) in /opt/id-linkcite/runtime"
+fi
+export PATH=/opt/id-linkcite/runtime/bin:$PATH
 exec 9>/var/lock/id-linkcite-deploy.lock
 flock -n 9 || { echo 'Another deployment is already running.' >&2; exit 1; }
 

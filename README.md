@@ -17,7 +17,7 @@ On the LXC `id-linkcite`, behind the Cloudflare tunnel for `id.linkcite.org`:
 - **Trifid** ([zazuko/trifid](https://github.com/zazuko/trifid)) listens on port 7878, the tunnel's target. It turns a request for an IRI into a query, picks the format, and renders HTML. It also proxies `/query`.
 - **Oxigraph** runs read-only on `127.0.0.1:7879`, reachable only from Trifid. Nothing on the internet can write to it.
 
-Both run as the unprivileged `id-linkcite` account, as the systemd units in `deploy/`. Each deployment loads a fresh store from `build/public.nq`; the previous two releases and stores are kept for rollback.
+Trifid uses the official Node.js 22 runtime in `/opt/id-linkcite/runtime`, which the first deployment installs (checksum-verified). Both run as the unprivileged `id-linkcite` account, as the systemd units in `deploy/`. Each deployment loads a fresh store from `build/public.nq`; the previous two releases and stores are kept for rollback.
 
 ## What is public
 
