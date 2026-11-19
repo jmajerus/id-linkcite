@@ -68,8 +68,10 @@ def welcome(manifest):
   <div class="trifid-content">
     <div class="container">
       <h1>id.linkcite.org</h1>
-      <p>Permanent identifiers for terms. Each one resolves here to its label, codes and links,
-      as HTML in a browser, or as Turtle, JSON-LD or N-Triples by content negotiation.</p>
+      <p>Permanent identifiers for the terms of <cite>The Struggle Against Dehumanization</cite> and related
+      vocabularies, kept stable so that books, notes and tools can cite a term and still find it later.</p>
+      <p>Each IRI resolves here to its label, codes and links: as a page in a browser, or as Turtle, JSON-LD or
+      N-Triples by content negotiation. Definitions follow when the book is published.</p>
     </div>
   </div>
 </div>

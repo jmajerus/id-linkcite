@@ -6,6 +6,13 @@ server:
     port: 7878
   logLevel: info
 
+template:
+  title: id.linkcite.org
+  files:
+    main: file:views/main.hbs
+    header: file:views/header.hbs
+    footer: file:views/footer.hbs
+
 globals:
   # Locally (http://localhost:7878) IRIs are rewritten to the request's host; behind the
   # tunnel the request host is id.linkcite.org, so nothing changes.
