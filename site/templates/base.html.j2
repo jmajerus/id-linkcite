@@ -24,7 +24,7 @@
     <article class="entry" id="{{ fragment.anchor }}">
       <h2>{{ fragment.label }}</h2>
       <p class="placement"><a href="{{ fragment.iri }}">{{ fragment.iri }}</a></p>
-      {% with definitions=fragment.definitions, descriptions=fragment.descriptions, comments=fragment.comments, scope_notes=fragment.scope_notes, editorial=fragment.editorial %}
+      {% with definitions=fragment.definitions, descriptions=fragment.descriptions, comments=fragment.comments, scope_notes=fragment.scope_notes, editorial_iri=fragment.editorial_iri %}
         {% include '_resource-content.html.j2' %}
       {% endwith %}
       {% with resource_links=fragment.resource_links %}
