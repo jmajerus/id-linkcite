@@ -20,6 +20,18 @@
   </header>
   <main class="wrap">
     {% block main %}{% endblock %}
+    {% for fragment in fragment_sections %}
+    <article class="entry" id="{{ fragment.anchor }}">
+      <h2>{{ fragment.label }}</h2>
+      <p class="placement"><a href="{{ fragment.iri }}">{{ fragment.iri }}</a></p>
+      {% with definitions=fragment.definitions, descriptions=fragment.descriptions, comments=fragment.comments, scope_notes=fragment.scope_notes, editorial=fragment.editorial %}
+        {% include '_resource-content.html.j2' %}
+      {% endwith %}
+      {% with resource_links=fragment.resource_links %}
+        {% include '_resource-links.html.j2' %}
+      {% endwith %}
+    </article>
+    {% endfor %}
   </main>
   <footer class="site-footer">
     <div class="wrap">
