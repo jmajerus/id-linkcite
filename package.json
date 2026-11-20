@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": ".venv/bin/python scripts/build.py",
+    "test": ".venv/bin/python -m unittest discover -s tests && node --check trifid/plugins/pages.js && node --check editorial_service/admin.js",
     "start": "trifid --config trifid/config.yaml",
     "deploy": "python3 tools/deploy.py"
   },
