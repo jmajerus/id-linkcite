@@ -351,6 +351,11 @@ def write_pages(dataset, base, out: Path):
              frameworks.overview(), *frameworks.pages()]
     known = {context['iri'] for _, _, context in pages}
     # Prebuild a reader shell for every supported public document IRI.
+    fragments = defaultdict(list)
+    for key in sorted(resources):
+        document, sep, _ = key.partition('#')
+        if sep:
+            fragments[document].append(key)
     docs = {iri.split('#', 1)[0] for iri in resources}
     for iri in sorted(docs - known):
         path = iri[len(base):] + '.html'
@@ -363,13 +368,13 @@ def write_pages(dataset, base, out: Path):
         context['fragment_sections'] = [
             {'anchor': key.split('#', 1)[1],
              **generic_context(public, key), **resource_text(public, key), 'editorial_iri': key}
-            for key in sorted(resources) if key.startswith(iri + '#')
+            for key in fragments.get(iri, [])
         ]
         target = out / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(env.get_template(template).render(**context), encoding='utf-8')
         written.append(path)
-    # A removed snippet must not leave an obsolete generated page in the next release.
+    # A retired IRI must not leave an obsolete generated page in the next release.
     generated = set(written)
     for stale in out.rglob('*.html'):
         if stale.relative_to(out).as_posix() not in generated:
