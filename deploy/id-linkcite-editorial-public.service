@@ -15,7 +15,7 @@ Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 ProtectSystem=strict
-# libpq stats ~/.postgresql/postgresql.crt; with ProtectHome=true that fails with
+# libpq looks for ~/.postgresql/postgresql.crt; with ProtectHome=true the lookup fails with
 # EACCES (fatal) instead of ENOENT (skipped). tmpfs hides /home but leaves it empty.
 ProtectHome=tmpfs
 PrivateTmp=true
