@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
-from source_state import describe, source_state  # noqa: E402
+from source_state import stale_reasons  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 HOST = os.environ.get('ID_LINKCITE_HOST', 'root@id-linkcite.localdomain')
@@ -68,10 +68,9 @@ def main():
     if not manifest_path.exists():
         sys.exit('No complete build: build/manifest.json is missing. Run python3 scripts/build.py first.')
     manifest = json.loads(manifest_path.read_text())
-    built, current = manifest.get('site'), source_state(ROOT)
-    if built != current:
-        message = (f'build/ was made from {describe(built)}, but the checkout is {describe(current)}. '
-                   'Run python3 scripts/build.py first')
+    reasons = stale_reasons(ROOT, manifest)
+    if reasons:
+        message = '; '.join(reasons) + '. Run python3 scripts/build.py first'
         if not args.allow_stale:
             sys.exit(message + ', or pass --allow-stale.')
         print(f'Warning: {message}; deploying anyway (--allow-stale).', file=sys.stderr)
@@ -79,7 +78,11 @@ def main():
     print(f"Deploying {summary}{'' if manifest['definitions'] else ', without definitions'} to {HOST}", flush=True)
     rid = release_id()
     release = f'/opt/id-linkcite/releases/{rid}'
-    ssh(f'install -d -m 0755 /opt/id-linkcite/releases && mkdir {release} && tar -xzf - -C {release}', data=archive())
+    data = archive()
+    # Check again after packing, so an edit made while archiving cannot slip in unchecked.
+    if not args.allow_stale and stale_reasons(ROOT, manifest) != reasons:
+        sys.exit('The source changed while the release was being packed; nothing was uploaded. Deploy again.')
+    ssh(f'install -d -m 0755 /opt/id-linkcite/releases && mkdir {release} && tar -xzf - -C {release}', data=data)
     ssh(f'RELEASE_ID={rid} sh {release}/deploy/install.sh')
 
 

@@ -26,6 +26,29 @@ def source_state(root):
     return {'commit': commit, 'changes': None if clean else digest.hexdigest()}
 
 
+def file_digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def stale_reasons(root, manifest):
+    """Why build output in this manifest no longer matches its inputs; empty if it does."""
+    root = Path(root)
+    reasons = []
+    built, current = manifest.get('site'), source_state(root)
+    if built != current:
+        reasons.append(f'build/ was made from {describe(built)}, but the checkout is {describe(current)}')
+    for vocab in manifest.get('vocabularies', []):
+        for source in vocab.get('sources', []):
+            path = (root / source['file']).resolve()
+            recorded = source.get('sha256')
+            actual = file_digest(path) if path.is_file() else None
+            if recorded is None or recorded != actual:
+                state = ('was not fingerprinted by the build' if recorded is None else
+                         'is missing' if actual is None else 'has changed since the build')
+                reasons.append(f"{source['file']} {state}")
+    return reasons
+
+
 def describe(state):
     if not state:
         return 'unknown source'
