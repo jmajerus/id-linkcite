@@ -7,7 +7,9 @@ Wants=network-online.target
 User=id-linkcite-public
 Group=id-linkcite-public
 WorkingDirectory=/opt/id-linkcite/current
-EnvironmentFile=/etc/linkcite/editorial-public.env
+# One root-only file for both units; drop the other role's secrets.
+EnvironmentFile=/etc/linkcite/editorial.env
+UnsetEnvironment=LINKCITE_EDITORIAL_EDITOR_DSN LINKCITE_EDITORIAL_USER LINKCITE_EDITORIAL_PASSWORD AUTHORING_DATABASE_URL
 ExecStart=/opt/id-linkcite/editorial-venv/bin/python /opt/id-linkcite/current/editorial_service/server.py public
 Restart=on-failure
 RestartSec=3

@@ -34,6 +34,15 @@ MAX_TEXT = 250_000
 STATE_COLUMNS = ("iri, draft_markdown, private_markdown, published_markdown, "
                  "revision_number, created_at, updated_at, published_at")
 HISTORY_COLUMNS = ("revision_number, action, changed_by, changed_at, change_note")
+DSN_VARIABLES = {"public": "LINKCITE_EDITORIAL_READER_DSN",
+                 "admin": "LINKCITE_EDITORIAL_EDITOR_DSN"}
+SECRET_VARIABLES = (*DSN_VARIABLES.values(), "LINKCITE_EDITORIAL_PASSWORD")
+
+
+class Server(ThreadingHTTPServer):
+    # The socketserver default backlog of 5 drops SYNs under bursts, adding
+    # 1 s retransmits that exceed the reader's 100 ms deadline.
+    request_queue_size = 128
 
 
 class Problem(Exception):
@@ -143,6 +152,9 @@ class PublishedHTMLCache:
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
+    # Headers and body are separate writes on a keep-alive connection; with Nagle
+    # enabled, delayed ACKs add ~40 ms to every response on Linux.
+    disable_nagle_algorithm = True
 
     def log_message(self, fmt, *args):
         # No request paths, query strings, credentials or document bodies in logs.
@@ -280,7 +292,9 @@ def main():
     parser.add_argument("mode", choices=("public", "admin"))
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    dsn = os.environ["LINKCITE_EDITORIAL_DSN"]
+    # One environment file serves both units; each mode reads only its own role's
+    # DSN, and the systemd units unset the other mode's secrets before start.
+    dsn = os.environ[DSN_VARIABLES[args.mode]]
     port = 7880 if args.mode == "public" else 7881
     # Warm persistent connections. The reader has a tightly bounded transaction time.
     timeout = 50 if args.mode == "public" else 5000
@@ -288,7 +302,7 @@ def main():
                         timeout=0.05 if args.mode == "public" else 2,
                         kwargs={"row_factory": dict_row, "connect_timeout": 3,
                                 "options": f"-c statement_timeout={timeout}"}) as pool:
-        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        server = Server(("127.0.0.1", port), Handler)
         server.mode, server.pool = args.mode, pool
         server.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
         if args.mode == "public":
@@ -296,10 +310,12 @@ def main():
         if args.mode == "admin":
             actor = os.environ.get("LINKCITE_EDITORIAL_USER", "editor")
             password = os.environ["LINKCITE_EDITORIAL_PASSWORD"]
-            if len(password) < 20 or ":" in actor:
-                raise ValueError("Set a strong admin password (at least 20 characters).")
+            if len(password) < 8 or ":" in actor:
+                raise ValueError("Set a strong admin password (at least 8 characters).")
             server.actor = actor
             server.auth = "Basic " + base64.b64encode(f"{actor}:{password}".encode()).decode()
+        for name in SECRET_VARIABLES:
+            os.environ.pop(name, None)
         LOG.info("%s listening on loopback:%s", args.mode, port)
         try:
             server.serve_forever()

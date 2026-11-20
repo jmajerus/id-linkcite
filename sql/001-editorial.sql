@@ -44,7 +44,7 @@ CREATE FUNCTION editorial.change_resource(
     p_iri text, p_expected bigint, p_action text,
     p_draft text, p_private text, p_restore bigint, p_actor text, p_note text
 ) RETURNS editorial.resource_content
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
     current_row editorial.resource_content%ROWTYPE;

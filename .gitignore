@@ -2,3 +2,6 @@ build/
 node_modules/
 __pycache__/
 .venv/
+
+# Local secrets
+.env

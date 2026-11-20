@@ -35,21 +35,42 @@ Reassign or archive retired resources administratively after reviewing identity.
 
 ## One-time database provisioning
 
-On postgresql.localdomain, in an administrative psql session, use dedicated
-roles and a database (adjust names only if you also adjust the migration):
+The database is `id-linkcite` on postgresql.localdomain. Connect an
+administrative psql session to the server's maintenance database (for example
+`psql "postgresql://ADMIN@postgresql.localdomain/postgres?sslmode=require"`),
+then create a non-login owner, the two login roles (names are fixed by the
+migration) and the database:
 
 ```sql
+CREATE ROLE linkcite_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
 CREATE ROLE linkcite_reader LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
 CREATE ROLE linkcite_editor LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-CREATE DATABASE linkcite;
-REVOKE CONNECT ON DATABASE linkcite FROM PUBLIC;
-GRANT CONNECT ON DATABASE linkcite TO linkcite_reader, linkcite_editor;
+CREATE DATABASE "id-linkcite" OWNER linkcite_owner
+    TEMPLATE template0 ENCODING 'UTF8' LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8';
+REVOKE ALL ON DATABASE "id-linkcite" FROM PUBLIC;
+GRANT CONNECT ON DATABASE "id-linkcite" TO linkcite_reader, linkcite_editor;
 ```
+
+If the database was already created by an administrator, replace the
+`CREATE DATABASE` statement with `ALTER DATABASE "id-linkcite" OWNER TO linkcite_owner;`.
+The `builtin` locale provider requires PostgreSQL 17 or later; on older servers
+use `LOCALE 'C.UTF-8'` instead. The schema does not depend on collation.
 
 Use psql's interactive `\password linkcite_reader` and
 `\password linkcite_editor` to set different strong passwords rather than
-committing or sharing credentials. Run `sql/001-editorial.sql` as the database
-owner in linkcite. Limit PostgreSQL network access to the LXC and authorized
+committing or sharing credentials; `\password` hashes them client-side, so the
+plaintext never reaches server logs. Then connect to `id-linkcite` itself and
+apply the migration as the owner role:
+
+```sh
+psql "postgresql://ADMIN@postgresql.localdomain/id-linkcite?sslmode=require" \
+  -X -v ON_ERROR_STOP=1 -c 'SET ROLE linkcite_owner' -f sql/001-editorial.sql
+```
+
+Never apply it directly as a superuser or as a superuser-owned database's
+owner: `editorial.change_resource` is SECURITY DEFINER and runs with its
+owner's privileges. Revoking ALL from PUBLIC also removes TEMP, so neither
+application role can create temporary objects. Limit PostgreSQL network access to the LXC and authorized
 administrators using firewall and pg_hba.conf. Use TLS with certificate
 verification where available (sslmode=verify-full with a trusted CA).
 The public role must not be a member of the editor or owner roles.
@@ -112,26 +133,30 @@ python3 -m venv /opt/id-linkcite/editorial-venv
 /opt/id-linkcite/editorial-venv/bin/pip install -r /opt/id-linkcite/current/requirements.txt
 ```
 
-Create two separate mode-0600 root-owned systemd environment files using a
-local editor (not in Git). Example format, with placeholders only:
+Create one mode-0600 root-owned systemd environment file using a local editor
+(not in Git). Example format, with placeholders only:
 
 ```text
-# /etc/linkcite/editorial-public.env
-LINKCITE_EDITORIAL_DSN="host=postgresql.localdomain dbname=linkcite user=linkcite_reader password=REPLACE sslmode=verify-full"
-```
-
-```text
-# /etc/linkcite/editorial-admin.env
-LINKCITE_EDITORIAL_DSN="host=postgresql.localdomain dbname=linkcite user=linkcite_editor password=REPLACE sslmode=verify-full"
+# /etc/linkcite/editorial.env
+LINKCITE_EDITORIAL_READER_DSN="postgresql://linkcite_reader:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
+LINKCITE_EDITORIAL_EDITOR_DSN="postgresql://linkcite_editor:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
 LINKCITE_EDITORIAL_USER="editor"
-LINKCITE_EDITORIAL_PASSWORD="REPLACE_WITH_A_SEPARATE_STRONG_PASSWORD_AT_LEAST_20_CHARACTERS"
+LINKCITE_EDITORIAL_PASSWORD="REPLACE_WITH_A_SEPARATE_PASSWORD_OF_AT_LEAST_8_CHARACTERS"
 ```
+
+systemd reads the file as root before dropping privileges, so the service
+users never read it directly. Each unit's `UnsetEnvironment=` removes the
+other role's secrets before start: the public reader process receives only
+the reader DSN, and the admin process never receives it. Each mode reads
+only its own variable. Do not add the administrative superuser URL to this
+file; the units also unset `AUTHORING_DATABASE_URL` in case it is copied in.
+URL-encode any reserved characters in passwords.
 
 Adjust the DSN TLS options to the actual server certificate configuration.
 Do not put secrets on command lines or in application logs. Install and start:
 
 ```sh
-chmod 0600 /etc/linkcite/editorial-*.env
+chmod 0600 /etc/linkcite/editorial.env
 for mode in public admin; do
   install -m 0644 "/opt/id-linkcite/current/deploy/id-linkcite-editorial-$mode.service" /etc/systemd/system/
 done
