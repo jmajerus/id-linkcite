@@ -366,4 +366,9 @@ def write_pages(dataset, base, out: Path):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(env.get_template(template).render(**context), encoding='utf-8')
         written.append(path)
+    # A removed snippet must not leave an obsolete generated page in the next release.
+    generated = set(written)
+    for stale in out.rglob('*.html'):
+        if stale.relative_to(out).as_posix() not in generated:
+            stale.unlink()
     return written
