@@ -5,6 +5,9 @@
     python3 tools/deploy.py            # copy the release and run deploy/install.sh there
     python3 tools/deploy.py --inspect  # show the server's services and what it is serving
 
+A deploy refuses a build made from a different commit or different uncommitted changes
+than the current checkout; rebuild, or pass --allow-stale to deploy it anyway.
+
 The host is root@id-linkcite.localdomain unless ID_LINKCITE_HOST says otherwise.
 """
 import argparse
@@ -16,6 +19,9 @@ import sys
 import tarfile
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
+from source_state import describe, source_state  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 HOST = os.environ.get('ID_LINKCITE_HOST', 'root@id-linkcite.localdomain')
@@ -52,11 +58,23 @@ def archive():
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     parser.add_argument('--inspect', action='store_true', help="show the server's state without changing it")
+    parser.add_argument('--allow-stale', action='store_true',
+                        help='deploy even if build/ was made from different source than the checkout')
     args = parser.parse_args()
     if args.inspect:
         ssh(INSPECT)
         return
-    manifest = json.loads((ROOT / 'build/manifest.json').read_text())
+    manifest_path = ROOT / 'build/manifest.json'
+    if not manifest_path.exists():
+        sys.exit('No complete build: build/manifest.json is missing. Run python3 scripts/build.py first.')
+    manifest = json.loads(manifest_path.read_text())
+    built, current = manifest.get('site'), source_state(ROOT)
+    if built != current:
+        message = (f'build/ was made from {describe(built)}, but the checkout is {describe(current)}. '
+                   'Run python3 scripts/build.py first')
+        if not args.allow_stale:
+            sys.exit(message + ', or pass --allow-stale.')
+        print(f'Warning: {message}; deploying anyway (--allow-stale).', file=sys.stderr)
     summary = ', '.join(f"{v['path']} ({v['resources']})" for v in manifest['vocabularies'])
     print(f"Deploying {summary}{'' if manifest['definitions'] else ', without definitions'} to {HOST}", flush=True)
     rid = release_id()

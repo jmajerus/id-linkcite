@@ -23,6 +23,7 @@ from rdflib import Dataset, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import DCTERMS, OWL, RDF, RDFS, SKOS
 
 from pages import write_pages
+from source_state import source_state
 
 ROOT = Path(__file__).resolve().parent.parent
 PC = Namespace('https://id.linkcite.org/patterns/vocab#')
@@ -100,7 +101,9 @@ def main():
     base = config['base'].rstrip('/')
 
     dataset = Dataset()
-    manifest = {'base': base + '/', 'definitions': True, 'vocabularies': []}
+    # Captured before reading anything, so edits made during the build count as stale.
+    manifest = {'base': base + '/', 'definitions': True, 'site': source_state(ROOT), 'vocabularies': []}
+    (args.out / 'manifest.json').unlink(missing_ok=True)  # no manifest until the build completes
     for vocab in config['vocabularies']:
         if not vocab.get('publish', True):
             print(f"{vocab['path']}: not published (\"publish\": false)")
@@ -134,10 +137,11 @@ def main():
     # Sorted, so an unchanged build gives an unchanged file.
     lines = sorted(set(dataset.serialize(format='nquads').splitlines()) - {''})
     (args.out / 'public.nq').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    (args.out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     (args.out / 'welcome.hbs').write_text(welcome(manifest), encoding='utf-8')
     pages = write_pages(dataset, base + '/', args.out / 'pages')
     print(f'Wrote {len(pages)} reader pages')
+    # Last: tools/deploy.py treats the manifest's site state as proof of a complete build.
+    (args.out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     print(f"Wrote {args.out / 'public.nq'}: {len(lines)} quads, including available definitions")
 
 
