@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HOST = os.environ.get('ID_LINKCITE_HOST', 'root@id-linkcite.localdomain')
-FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'site/assets', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs', 'build/pages']
+FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'site/assets', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs', 'build/pages', 'build/editorial-resources.json']
 INSPECT = r'''
 for unit in id-linkcite id-linkcite-oxigraph oxigraph; do printf '%-22s %s %s\n' "$unit" "$(systemctl is-enabled $unit 2>/dev/null || true)" "$(systemctl is-active $unit 2>/dev/null || true)"; done
 echo "release: $(readlink /opt/id-linkcite/current || echo none)"
