@@ -28,7 +28,7 @@ They cover both published vocabularies:
 - **Patterns:** the overview (`/patterns/scheme`), a page for each pattern and cluster, and the tags patterns use (settings, what patterns do, what works against them), each with its patterns. Text in `site/content/patterns.toml`.
 - **Frameworks:** the overview (`/frameworks/scheme`), arranged as the book orients them (DF0, the distortion and magnification planes, then DF5 and DF6), a page for each framework with its terms by role, and a page for each term. Text in `site/content/frameworks.toml`.
 
-Edit the text files, then build and deploy. RDF definitions, descriptions, comments and scope notes are shown where available; optional per-IRI Markdown is rendered after that canonical prose. See [editorial instructions](site/content/EDITORIAL.md). Otherwise generic resources get a reader page if they have editorial content; resources without authored or generated pages keep Trifid's generic view.
+Edit the text files, then build and deploy. RDF definitions, descriptions, comments and scope notes are shown where available; optional per-IRI Markdown from PostgreSQL is inserted after canonical prose at request time. See [editorial instructions](site/content/EDITORIAL.md). Reader shells are generated for all supported public resource IRIs, including hash fragments.
 
 ## What is public
 
@@ -40,7 +40,7 @@ Edit the text files, then build and deploy. RDF definitions, descriptions, comme
 
 Everything else stays private, including source text, page locators and editorial notes. A new property is private until it is added to `PUBLIC_TEXT` in the script on purpose.
 
-Definitions, scope notes and descriptions are now included by default; the old `--definitions` flag is accepted for compatibility but is unnecessary. The allowlist still excludes full manuscript passages, source locators and editorial notes. Markdown under `site/content/iri/` is explicitly public HTML content, separate from the RDF graph.
+Definitions, scope notes and descriptions are now included by default; the old `--definitions` flag is accepted for compatibility but is unnecessary. The allowlist still excludes full manuscript passages, source locators and editorial notes. Published editorial Markdown is maintained separately in PostgreSQL; drafts, notes and history stay private. The reader service can select only the published HTML view. Editing does not require a Git commit, rebuild or deployment.
 
 ## Updating
 
