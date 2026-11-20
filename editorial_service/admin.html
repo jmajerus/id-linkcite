@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkCite editorial administration</title><link rel="stylesheet" href="/admin.css">
+<script src="/admin.js" defer></script></head>
+<body>
+<header><h1>LinkCite editorial administration</h1><p>Private workspace · Markdown and revision history</p></header>
+<main>
+<label for="search">Find a public resource</label>
+<input id="search" type="search" placeholder="Filter by label or IRI" autocomplete="off">
+<label for="resource">Resource</label><select id="resource" size="6"></select>
+<p id="resource-label"></p>
+<div id="workspace" hidden>
+<div class="tabs" role="group" aria-label="Editing area">
+<button id="content-tab" type="button" aria-pressed="true">Public content draft</button>
+<button id="notes-tab" type="button" aria-pressed="false">Private notes</button>
+</div>
+<p id="hint">Draft content is private until you explicitly publish it.</p>
+<div class="toolbar" id="toolbar" role="group" aria-label="Markdown formatting">
+<button data-format="bold" type="button"><b>Bold</b></button><button data-format="italic" type="button"><i>Italic</i></button>
+<button data-format="heading" type="button">Heading</button><button data-format="list" type="button">List</button>
+<button data-format="link" type="button">Link</button><button id="refresh-preview" type="button">Refresh preview</button>
+</div>
+<div class="split">
+<div><label for="markdown">Markdown source</label><textarea id="markdown" spellcheck="true"></textarea></div>
+<div><label for="preview">Rendered preview</label><iframe id="preview" sandbox title="Markdown preview"></iframe></div>
+</div>
+<label for="change-note">Optional revision note</label><input id="change-note" maxlength="2000">
+<div class="actions">
+<button id="save" type="button">Save draft and notes</button>
+<button id="publish" type="button" class="primary">Publish public draft</button>
+<button id="unpublish" type="button">Unpublish public content</button>
+</div>
+<p id="publication"></p>
+<section><h2>Revision history</h2><div class="split history">
+<div><label for="history">Saved revisions</label><select id="history" size="7"></select></div>
+<div><h3>Selected revision</h3><pre id="historical"></pre><button id="restore" type="button" disabled>Restore draft and notes</button></div>
+</div></section>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+</main></body></html>
