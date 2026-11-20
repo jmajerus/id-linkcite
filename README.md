@@ -28,7 +28,7 @@ They cover both published vocabularies:
 - **Patterns:** the overview (`/patterns/scheme`), a page for each pattern and cluster, and the tags patterns use (settings, what patterns do, what works against them), each with its patterns. Text in `site/content/patterns.toml`.
 - **Frameworks:** the overview (`/frameworks/scheme`), arranged as the book orients them (DF0, the distortion and magnification planes, then DF5 and DF6), a page for each framework with its terms by role, and a page for each term. Text in `site/content/frameworks.toml`.
 
-Edit the text files, then build and deploy. Anything without a page (kinds, types, unused tag vocabularies, the `vocab#` classes) keeps Trifid's generic view.
+Edit the text files, then build and deploy. RDF definitions, descriptions, comments and scope notes are shown where available; optional per-IRI Markdown from PostgreSQL is inserted after canonical prose at request time. See [editorial instructions](site/content/EDITORIAL.md). Reader shells are generated for all supported public resource IRIs, including hash fragments.
 
 ## What is public
 
@@ -36,11 +36,11 @@ Edit the text files, then build and deploy. Anything without a page (kinds, type
 
 - only resources under the vocabulary's own path, and no blank nodes;
 - links to other IRIs (types, schemes, broader, related, tags), except `dct:source` and `pc:cites`;
-- only these literals: labels, alternative labels, codes (`skos:notation`), slugs, statuses, keys and version info.
+- only these literals: labels, alternative labels, codes (`skos:notation`), slugs, statuses, keys and version info, plus definitions (`skos:definition`), scope notes, `dct:description` and `rdfs:comment`.
 
 Everything else stays private, including source text, page locators and editorial notes. A new property is private until it is added to `PUBLIC_TEXT` in the script on purpose.
 
-Definitions, scope notes and descriptions are left out until the book is published. `python3 scripts/build.py --definitions` includes them.
+Definitions, scope notes and descriptions are now included by default; the old `--definitions` flag is accepted for compatibility but is unnecessary. The allowlist still excludes full manuscript passages, source locators and editorial notes. Published editorial Markdown is maintained separately in PostgreSQL; drafts, notes and history stay private. The reader service can select only the published Markdown view and renders sanitized HTML using a bounded cache. The editor role writes only via the controlled database transition function. Editing does not require a Git commit, rebuild or deployment.
 
 ## Updating
 
@@ -70,7 +70,7 @@ Add an entry to `vocabularies.json`: its `path` (the first segment under the roo
 
 - IRIs in pre-1.0 ontologies are provisional and may be revised, consolidated or retired. Once an IRI is included in a formally published ontology release at version 1.0 or later, preserve that identifier permanently, even if its label changes or the resource is deprecated. Never put a version in an entity IRI.
 - Terms take slash paths (`/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/patterns/vocab#AntiPattern`).
-- Before the book is published, serve labels and links only.
+- The published vocabulary includes its available definitions; full manuscript text stays private. Reader pages retain `noindex` until a separate decision is made about search-engine indexing.
 
 ## Licensing
 

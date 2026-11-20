@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Collect the public view of each vocabulary into build/public.nq, one named graph per vocabulary.
 
-    python scripts/build.py                 # labels, codes, types and links only
-    python scripts/build.py --definitions   # also definitions, scope notes and descriptions
+    python scripts/build.py                 # labels, links, definitions, scope notes and descriptions
 
 Each vocabulary's sources (vocabularies.json) are read from sibling repositories and filtered:
 
 - Only subjects under the vocabulary's own path (https://id.linkcite.org/<path>) are kept, and blank nodes are dropped.
 - A link to another IRI is kept, except the predicates in PRIVATE_LINKS.
-- A literal is kept only for the predicates in PUBLIC_TEXT (and DEFINITIONS with --definitions).
+- A literal is kept only for the predicates in PUBLIC_TEXT or DEFINITIONS.
   Anything else, such as source text, page locators and editorial notes, never leaves its repository.
 
 A new property therefore stays private until it is added here on purpose.
@@ -35,8 +34,8 @@ DEFINITIONS = {SKOS.definition, SKOS.scopeNote, DCTERMS.description, RDFS.commen
 PRIVATE_LINKS = {DCTERMS.source, PC.cites}
 
 
-def public(graph, prefix, definitions):
-    text = PUBLIC_TEXT | (DEFINITIONS if definitions else set())
+def public(graph, prefix):
+    text = PUBLIC_TEXT | DEFINITIONS
     for s, p, o in graph:
         if not (isinstance(s, URIRef) and (str(s) == prefix or str(s).startswith((prefix + '/', prefix + '#')))):
             continue
@@ -73,8 +72,8 @@ def welcome(manifest):
       <p>Persistent identifiers for the terms of <cite>The Struggle Against Dehumanization</cite> and related
       vocabularies. Identifiers are provisional during pre-1.0 development and become permanent when included
       in a formally published ontology release at version 1.0 or later.</p>
-      <p>Each IRI resolves here to its label, codes and links: as a page in a browser, or as Turtle, JSON-LD or
-      N-Triples by content negotiation. Definitions follow when the book is published.</p>
+      <p>Each IRI resolves here to its available definitions, codes and links: as a page in a browser, or as Turtle,
+      JSON-LD or N-Triples by content negotiation. Reader pages may also include editorial commentary.</p>
     </div>
   </div>
 </div>
@@ -94,14 +93,14 @@ def welcome(manifest):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
-    parser.add_argument('--definitions', action='store_true', help='also publish definitions, scope notes and descriptions')
+    parser.add_argument('--definitions', action='store_true', help=argparse.SUPPRESS)  # legacy flag; always included
     parser.add_argument('--out', type=Path, default=ROOT / 'build')
     args = parser.parse_args()
     config = json.loads((ROOT / 'vocabularies.json').read_text())
     base = config['base'].rstrip('/')
 
     dataset = Dataset()
-    manifest = {'base': base + '/', 'definitions': args.definitions, 'vocabularies': []}
+    manifest = {'base': base + '/', 'definitions': True, 'vocabularies': []}
     for vocab in config['vocabularies']:
         if not vocab.get('publish', True):
             print(f"{vocab['path']}: not published (\"publish\": false)")
@@ -116,7 +115,7 @@ def main():
             source.parse(path)
             sources.append({'file': name, 'commit': source_commit(path)})
         graph = dataset.graph(URIRef(prefix))
-        for triple in public(source, prefix, args.definitions):
+        for triple in public(source, prefix):
             graph.add(triple)
         # Hash IRIs (classes and properties) are described by their document, the part before the #.
         for s in set(graph.subjects()):
@@ -139,7 +138,7 @@ def main():
     (args.out / 'welcome.hbs').write_text(welcome(manifest), encoding='utf-8')
     pages = write_pages(dataset, base + '/', args.out / 'pages')
     print(f'Wrote {len(pages)} reader pages')
-    print(f"Wrote {args.out / 'public.nq'}: {len(lines)} quads" + ('' if args.definitions else ', without definitions'))
+    print(f"Wrote {args.out / 'public.nq'}: {len(lines)} quads, including available definitions")
 
 
 if __name__ == '__main__':

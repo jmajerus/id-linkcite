@@ -24,11 +24,6 @@ apply one is the more responsible choice.
 The [Dehumanization Patterns](/patterns/scheme) catalog names the recurring forms these pathways take in practice.
 """
 
-pending = """
-This {noun} is described in Annex 1 of *The Struggle Against Dehumanization*. Its description will appear here
-when the book is published.
-"""
-
 # The overview's arrangement, after the book's own orientation. Frameworks are named by code.
 [[groups]]
 id = "start"

@@ -11,7 +11,7 @@
     In <a href="{{ fw.href }}">{{ fw.code }} {{ fw.label }}</a>{% if t.parent is not sameas fw %}, under <a href="{{ t.parent.href }}">{{ t.parent.code }} {{ t.parent.label }}</a>{% endif %}.
     {{ role_blurb }}
   </p>
-  <div class="pending">{{ pending | md }}</div>
+  {% include '_resource-content.html.j2' %}
 
   {% for group in roles %}
   <section class="facet">

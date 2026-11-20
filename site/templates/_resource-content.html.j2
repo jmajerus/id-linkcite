@@ -1,0 +1,10 @@
+{# Plain RDF literals are escaped; authored Markdown is sanitized. #}
+{% for heading, values in [('Definition', definitions), ('Description', descriptions), ('Comment', comments), ('Scope note', scope_notes)] %}
+{% if values %}
+<section class="facet rdf-text">
+  <h2>{{ heading }}</h2>
+  {% for value in values %}<p>{{ value }}</p>{% endfor %}
+</section>
+{% endif %}
+{% endfor %}
+{{ editorial_iri | editorial_marker }}

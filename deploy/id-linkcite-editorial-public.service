@@ -1,0 +1,20 @@
+[Unit]
+Description=LinkCite editorial public service (loopback only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=id-linkcite-public
+Group=id-linkcite-public
+WorkingDirectory=/opt/id-linkcite/current
+EnvironmentFile=/etc/linkcite/editorial-public.env
+ExecStart=/opt/id-linkcite/editorial-venv/bin/python /opt/id-linkcite/current/editorial_service/server.py public
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

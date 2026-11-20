@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  {# Not indexed until the book is published; links can still be followed. #}
+  {# Indexing policy is independent of publishing definitions; links can still be followed. #}
   <meta name="robots" content="noindex">
   <title>{% block title %}{% endblock %} · id.linkcite.org</title>
   <link rel="canonical" href="{{ iri }}">
@@ -20,6 +20,18 @@
   </header>
   <main class="wrap">
     {% block main %}{% endblock %}
+    {% for fragment in fragment_sections %}
+    <article class="entry" id="{{ fragment.anchor }}">
+      <h2>{{ fragment.label }}</h2>
+      <p class="placement"><a href="{{ fragment.iri }}">{{ fragment.iri }}</a></p>
+      {% with definitions=fragment.definitions, descriptions=fragment.descriptions, comments=fragment.comments, scope_notes=fragment.scope_notes, editorial_iri=fragment.editorial_iri %}
+        {% include '_resource-content.html.j2' %}
+      {% endwith %}
+      {% with resource_links=fragment.resource_links %}
+        {% include '_resource-links.html.j2' %}
+      {% endwith %}
+    </article>
+    {% endfor %}
   </main>
   <footer class="site-footer">
     <div class="wrap">

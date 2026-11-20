@@ -69,12 +69,6 @@ blurb = "Small preventive practices that work inside larger restorative patterns
 
 # Text on each pattern's own page.
 [pattern_page]
-# {noun} is "pattern" or "cluster".
-description_pending = """
-This {noun} is described in Annex 2 of *The Struggle Against Dehumanization*. Its description will appear here
-when the book is published.
-"""
-description_proposed = "This entry is proposed for the catalog and has no published description yet."
 answered_by = "Restorative patterns that counter or interrupt it."
 counters = "Anti-patterns it counters."
 interrupts = "Anti-patterns it interrupts."

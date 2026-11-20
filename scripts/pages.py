@@ -5,6 +5,7 @@ site/content/. The pages plugin (trifid/plugins/pages.js) serves them to browser
 still get Trifid's own responses.
 """
 import re
+import json
 import tomllib
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -15,6 +16,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
+
+from editorial import resource_text, reader_resources, generic_context, editorial_marker
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = 'https://id.linkcite.org'
@@ -90,10 +93,11 @@ sort_key = lambda item: item.label.lower()
 
 
 def environment():
-    env = Environment(loader=FileSystemLoader(ROOT / 'site/templates'), autoescape=select_autoescape(),
+    env = Environment(loader=FileSystemLoader(ROOT / 'site/templates'), autoescape=select_autoescape(enabled_extensions=('html', 'htm', 'xml', 'j2')),
                       trim_blocks=True, lstrip_blocks=True)
     env.filters['md'] = md
     env.filters['mdinline'] = lambda text: md(text, inline=True)
+    env.filters['editorial_marker'] = editorial_marker
     return env
 
 
@@ -319,7 +323,6 @@ class Frameworks:
                 'focus': c['frameworks'].get(framework.code, {}).get('focus', ''), 'group': group_of.get(framework.code),
                 'previous': self.frameworks[i - 1] if i > 0 else None,
                 'next': self.frameworks[i + 1] if i < len(self.frameworks) - 1 else None,
-                'pending': c['pending'].replace('{noun}', 'framework'),
             }
         for term in self.terms.values():
             if not term.parent:
@@ -330,7 +333,6 @@ class Frameworks:
                 'content': c, 'iri': term.iri, 't': term, 'role': c['roles'][term.role], 'role_blurb': c['role_blurbs'][term.role],
                 'roles': self.roles_of(term), 'siblings': siblings,
                 'previous': siblings[i - 1] if i > 0 else None, 'next': siblings[i + 1] if i < len(siblings) - 1 else None,
-                'pending': c['pending'].replace('{noun}', 'term'),
             }
 
 
@@ -338,11 +340,43 @@ def write_pages(dataset, base, out: Path):
     env = environment()
     catalog = Catalog(dataset.graph(URIRef(base + 'patterns')))
     frameworks = Frameworks(dataset.graph(URIRef(base + 'frameworks')))
+    # Render from the filtered public dataset only, never the private source graphs.
+    public = Graph()
+    for s, p, o, _ in dataset.quads((None, None, None, None)):
+        public.add((s, p, o))
+    resources = reader_resources(public, base)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    (out.parent / 'editorial-resources.json').write_text(json.dumps(resources, ensure_ascii=False, sort_keys=True), encoding='utf-8')
+    pages = [catalog.overview(), *catalog.pattern_pages(), *catalog.tag_pages(),
+             frameworks.overview(), *frameworks.pages()]
+    known = {context['iri'] for _, _, context in pages}
+    # Prebuild a reader shell for every supported public document IRI.
+    fragments = defaultdict(list)
+    for key in sorted(resources):
+        document, sep, _ = key.partition('#')
+        if sep:
+            fragments[document].append(key)
+    docs = {iri.split('#', 1)[0] for iri in resources}
+    for iri in sorted(docs - known):
+        path = iri[len(base):] + '.html'
+        pages.append((path, 'resource.html.j2', generic_context(public, iri)))
     written = []
-    for path, template, context in [catalog.overview(), *catalog.pattern_pages(), *catalog.tag_pages(),
-                                    frameworks.overview(), *frameworks.pages()]:
+    for path, template, context in pages:
+        iri = context['iri']
+        context.update(resource_text(public, iri))
+        context['editorial_iri'] = iri
+        context['fragment_sections'] = [
+            {'anchor': key.split('#', 1)[1],
+             **generic_context(public, key), **resource_text(public, key), 'editorial_iri': key}
+            for key in fragments.get(iri, [])
+        ]
         target = out / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(env.get_template(template).render(**context), encoding='utf-8')
         written.append(path)
+    # A retired IRI must not leave an obsolete generated page in the next release.
+    generated = set(written)
+    for stale in out.rglob('*.html'):
+        if stale.relative_to(out).as_posix() not in generated:
+            stale.unlink()
     return written

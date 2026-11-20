@@ -8,6 +8,7 @@
   <h1>{{ tag.name }}</h1>
   <p class="placement">{% if count %}{{ count }} pattern{{ 's' if count != 1 }} in the catalog{% else %}No pattern in the catalog has this tag itself{% endif %}{% if broader %}, under <a href="{{ broader.href }}">{{ broader.name }}</a>{% endif %}.</p>
 </div>
+{% include '_resource-content.html.j2' %}
 {% if anti %}<section class="facet"><h2>Anti-patterns</h2>{{ pattern_list(anti) }}</section>{% endif %}
 {% if restorative %}<section class="facet"><h2>Restorative patterns</h2>{{ pattern_list(restorative) }}</section>{% endif %}
 {% if narrower %}

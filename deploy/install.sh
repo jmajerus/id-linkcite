@@ -52,6 +52,17 @@ switch() {  # release store
   ln -sfn "$1" /opt/id-linkcite/current.next && mv -Tf /opt/id-linkcite/current.next /opt/id-linkcite/current
   ln -sfn "$2" /var/lib/id-linkcite/store.next && mv -Tf /var/lib/id-linkcite/store.next /var/lib/id-linkcite/store
   systemctl restart id-linkcite-oxigraph id-linkcite
+  # Optional editorial services are provisioned separately; the database is not part of rollback.
+  for mode in public admin; do
+    unit="id-linkcite-editorial-$mode.service"
+    if systemctl is-enabled --quiet "$unit"; then
+      if test -f "$1/editorial_service/server.py"; then
+        systemctl restart "$unit" || echo "Warning: $unit could not restart" >&2
+      else
+        systemctl stop "$unit" || true
+      fi
+    fi
+  done
 }
 install -m 0644 "$RELEASE/deploy/id-linkcite-oxigraph.service" "$RELEASE/deploy/id-linkcite.service" /etc/systemd/system/
 systemctl daemon-reload
