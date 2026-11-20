@@ -5,6 +5,7 @@ site/content/. The pages plugin (trifid/plugins/pages.js) serves them to browser
 still get Trifid's own responses.
 """
 import re
+import json
 import tomllib
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -16,7 +17,7 @@ from markupsafe import Markup
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from editorial import resource_text, load_snippets, generic_context, render_markdown
+from editorial import resource_text, reader_resources, generic_context, editorial_marker
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = 'https://id.linkcite.org'
@@ -96,7 +97,7 @@ def environment():
                       trim_blocks=True, lstrip_blocks=True)
     env.filters['md'] = md
     env.filters['mdinline'] = lambda text: md(text, inline=True)
-    env.filters['editorial_md'] = render_markdown
+    env.filters['editorial_marker'] = editorial_marker
     return env
 
 
@@ -343,12 +344,14 @@ def write_pages(dataset, base, out: Path):
     public = Graph()
     for s, p, o, _ in dataset.quads((None, None, None, None)):
         public.add((s, p, o))
-    snippets = load_snippets(ROOT / 'site/content/iri', public, base)
+    resources = reader_resources(public, base)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    (out.parent / 'editorial-resources.json').write_text(json.dumps(resources, ensure_ascii=False, sort_keys=True), encoding='utf-8')
     pages = [catalog.overview(), *catalog.pattern_pages(), *catalog.tag_pages(),
              frameworks.overview(), *frameworks.pages()]
     known = {context['iri'] for _, _, context in pages}
-    # Otherwise generic resources get reader pages when editorial material exists.
-    docs = {iri.split('#', 1)[0] for iri in snippets}
+    # Prebuild a reader shell for every supported public document IRI.
+    docs = {iri.split('#', 1)[0] for iri in resources}
     for iri in sorted(docs - known):
         path = iri[len(base):] + '.html'
         pages.append((path, 'resource.html.j2', generic_context(public, iri)))
@@ -356,11 +359,11 @@ def write_pages(dataset, base, out: Path):
     for path, template, context in pages:
         iri = context['iri']
         context.update(resource_text(public, iri))
-        context['editorial'] = snippets.get(iri, '')
+        context['editorial_iri'] = iri
         context['fragment_sections'] = [
             {'anchor': key.split('#', 1)[1],
-             **generic_context(public, key), **resource_text(public, key), 'editorial': snippets[key]}
-            for key in sorted(snippets) if key.startswith(iri + '#')
+             **generic_context(public, key), **resource_text(public, key), 'editorial_iri': key}
+            for key in sorted(resources) if key.startswith(iri + '#')
         ]
         target = out / path
         target.parent.mkdir(parents=True, exist_ok=True)
