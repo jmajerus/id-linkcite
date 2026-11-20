@@ -1,5 +1,4 @@
 import sys
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -7,7 +6,7 @@ from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import DCTERMS, RDFS, SKOS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from editorial import load_snippets, resource_text, render_markdown
+from editorial import reader_resources, editorial_marker, resource_text, render_markdown
 from build import public
 from pages import environment
 
@@ -39,15 +38,15 @@ class EditorialTests(unittest.TestCase):
         self.assertEqual(ctx["descriptions"], [])
         self.assertEqual(ctx["scope_notes"], ["A scope note"])
         html = environment().get_template("_resource-content.html.j2").render(
-            **ctx, editorial="## Extra\n\n**An example.**")
+            **ctx, editorial_iri=str(NODE))
         self.assertIn("&lt;b&gt;literal&lt;/b&gt;", html)
-        self.assertIn("<strong>An example.</strong>", html)
+        self.assertIn(str(editorial_marker(str(NODE))), html)
         self.assertNotIn("PRIVATE", html)
 
     def test_empty_content(self):
         ctx = resource_text(Graph(), str(NODE))
-        html = environment().get_template("_resource-content.html.j2").render(**ctx, editorial="")
-        self.assertFalse(html.strip())
+        html = environment().get_template("_resource-content.html.j2").render(**ctx, editorial_iri=str(NODE))
+        self.assertEqual(html.strip(), str(editorial_marker(str(NODE))))
 
     def test_editorial_sanitization(self):
         html = str(render_markdown('## Heading\n\n[bad](javascript:alert(1))\n\n'
@@ -59,22 +58,15 @@ class EditorialTests(unittest.TestCase):
         self.assertNotIn("onerror=", html)
         self.assertNotIn("<script", html)
 
-    def test_slash_and_hash_mapping(self):
+    def test_slash_and_hash_registry(self):
         doc = URIRef(BASE + "patterns/vocab")
         term = URIRef(str(doc) + "#AntiPattern")
         self.graph.add((doc, RDFS.label, Literal("Vocabulary")))
         self.graph.add((term, RDFS.label, Literal("Anti-pattern")))
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            sub = root / "patterns"
-            sub.mkdir()
-            (sub / "example.md").write_text("Example prose", encoding="utf-8")
-            (sub / "vocab#AntiPattern.md").write_text("Fragment prose", encoding="utf-8")
-            self.assertEqual(load_snippets(root, self.graph, BASE),
-                             {str(NODE): "Example prose", str(term): "Fragment prose"})
-            (sub / "unknown.md").write_text("Orphan", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "does not match a public IRI"):
-                load_snippets(root, self.graph, BASE)
+        self.graph.add((URIRef("https://elsewhere.example/test"), RDFS.label, Literal("external")))
+        self.assertEqual(reader_resources(self.graph, BASE),
+                         {str(NODE): "Example", str(doc): "Vocabulary", str(term): "Anti-pattern"})
+        self.assertNotEqual(editorial_marker(str(NODE)), editorial_marker(str(term)))
 
 if __name__ == "__main__":
     unittest.main()
