@@ -1,6 +1,6 @@
 # id.linkcite.org
 
-Permanent identifiers for terms. Each IRI under `https://id.linkcite.org/` resolves to the term's public description: an HTML page in a browser, or Turtle, JSON-LD or N-Triples by content negotiation. A read-only SPARQL endpoint answers at `/query`, with an editor at `/sparql/`.
+Persistent identifiers for terms (provisional until formal publication at version 1.0 or later). Each IRI under `https://id.linkcite.org/` resolves to the term's public description: an HTML page in a browser, or Turtle, JSON-LD or N-Triples by content negotiation. A read-only SPARQL endpoint answers at `/query`, with an editor at `/sparql/`.
 
 The vocabularies themselves live in their own repositories, which stay the source of truth. This repository only collects a public view of each one and serves it.
 
@@ -68,7 +68,7 @@ Add an entry to `vocabularies.json`: its `path` (the first segment under the roo
 
 ## Rules for IRIs
 
-- Never change an IRI once it's minted, and never put a version in one. Rename labels freely.
+- IRIs in pre-1.0 ontologies are provisional and may be revised, consolidated or retired. Once an IRI is included in a formally published ontology release at version 1.0 or later, preserve that identifier permanently, even if its label changes or the resource is deprecated. Never put a version in an entity IRI.
 - Terms take slash paths (`/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/patterns/vocab#AntiPattern`).
 - Before the book is published, serve labels and links only.
 
