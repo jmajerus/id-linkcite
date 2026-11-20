@@ -1,0 +1,8 @@
+{% if resource_links %}
+<section class="facet">
+  <h2>Semantic links</h2>
+  <ul>
+  {% for link in resource_links %}<li>{{ link.relation }}: <a href="{{ link.iri }}">{{ link.label }}</a></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
