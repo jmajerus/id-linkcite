@@ -43,7 +43,9 @@ class Tag:
 
     @property
     def name(self):
-        """The label as a reader sees it: hyphens to spaces, first letter capitalized."""
+        """Preserve explicitly capitalized labels; humanize legacy lower-case tag labels."""
+        if self.label[:1].isupper():
+            return self.label
         text = self.label.replace('-', ' ')
         return text[:1].upper() + text[1:]
 
