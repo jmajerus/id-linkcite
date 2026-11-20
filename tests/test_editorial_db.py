@@ -22,6 +22,8 @@ IRI = "https://id.linkcite.org/patterns/test-editorial-integration"
 class DatabaseTests(unittest.TestCase):
     def test_edits_history_and_restore(self):
         with psycopg.connect(os.environ["LINKCITE_TEST_EDITOR_DSN"], row_factory=dict_row) as conn:
+            # Start an outer transaction so change() uses a savepoint, not a commit.
+            conn.execute("BEGIN")
             try:
                 with patch("server.resources", return_value={IRI: "Test"}):
                     body = {"iri": IRI, "revision_number": 0, "action": "save",
