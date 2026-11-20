@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Private loopback services for LinkCite editorial content.
+"""Services for LinkCite editorial content.
 
 Run public and admin modes in separate processes with distinct database roles.
-The admin listener is accessed through an authenticated SSH port forward; HTTP
-Basic authentication is also required. Do not expose either port to Cloudflare.
+The public reader listens on loopback only, for Trifid. The admin listener follows
+the authoring suite: port 8000 on every interface, serving the editor at /admin,
+its JSON API at /api, MCP at /mcp and /health. Direct LAN requests are trusted;
+requests through the Cloudflare tunnel need a verified Access assertion (access.py).
 """
 import argparse
-import base64
-import hmac
 import json
 import logging
 import os
@@ -26,6 +26,8 @@ from psycopg_pool import ConnectionPool
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from editorial import render_markdown
+from access import Access, AccessError
+import mcp_tools
 
 LOG = logging.getLogger("linkcite-editorial")
 BASE = "https://id.linkcite.org/"
@@ -36,7 +38,11 @@ STATE_COLUMNS = ("iri, draft_markdown, private_markdown, published_markdown, "
 HISTORY_COLUMNS = ("revision_number, action, changed_by, changed_at, change_note")
 DSN_VARIABLES = {"public": "LINKCITE_EDITORIAL_READER_DSN",
                  "admin": "LINKCITE_EDITORIAL_EDITOR_DSN"}
+# The password is no longer used (the admin listener follows the suite's Access rules);
+# an old environment file may still carry it, so it is dropped before serving.
 SECRET_VARIABLES = (*DSN_VARIABLES.values(), "LINKCITE_EDITORIAL_PASSWORD")
+ADMIN_PORT = 8000
+SERVICE = "id-linkcite"
 
 
 class Server(ThreadingHTTPServer):
@@ -53,6 +59,37 @@ class Problem(Exception):
 def resources():
     # Read the current release's registry (never a private source graph).
     return json.loads((ROOT / "build/editorial-resources.json").read_text(encoding="utf-8"))
+
+
+def canonical():
+    # The public RDF text each page shows above its Markdown; absent from older builds.
+    path = ROOT / "build/editorial-canonical.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def version():
+    return json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+
+
+def health(pool, admin_url):
+    """The authoring suite's health contract (authoring-ops-mcp docs/health-contract.md)."""
+    try:
+        with pool.connection(timeout=2) as conn:
+            conn.execute("SELECT 1 FROM editorial.resource_content LIMIT 1")
+        database = True
+    except Exception:
+        database = False
+    value = {"ok": True, "service": SERVICE, "version": version(),
+             "dependencies": [{"name": "postgresql", "ok": database}], "admin": admin_url}
+    deployed = ROOT / "deployed.json"
+    if deployed.exists():
+        value["deployed"] = json.loads(deployed.read_text(encoding="utf-8"))
+    return value
+
+
+def actor_for(identity, lan_actor, channel=None):
+    who = identity.get("email") or identity.get("subject") or lan_actor
+    return (f"{channel} ({who})" if channel else who)[:200]
 
 
 def validate_iri(iri):
@@ -185,19 +222,51 @@ class Handler(BaseHTTPRequestHandler):
         self.send_bytes(status, json.dumps(value, default=str).encode("utf-8"),
                         "application/json; charset=utf-8", extra)
 
-    def authenticated(self):
-        expected = self.server.auth
-        value = self.headers.get("Authorization", "")
-        return hmac.compare_digest(value.encode(), expected.encode())
+    def read_json(self):
+        try:
+            size = int(self.headers.get("Content-Length", "0"))
+            if not 0 < size <= MAX_BODY:
+                raise Problem(413, "Request too large or empty.")
+            return json.loads(self.rfile.read(size))
+        except (ValueError, UnicodeError):
+            raise Problem(400, "Invalid JSON.")
+
+    def same_origin(self):
+        # Browsers send Origin on cross-site POSTs; no CORS headers are ever sent, and a
+        # JSON content type forces a preflight that fails, so cross-site writes cannot land.
+        origin = self.headers.get("Origin")
+        host = self.headers.get("Host", "")
+        return origin is None or origin in ("http://" + host, "https://" + host)
+
+    def mcp(self, identity):
+        if self.command != "POST":
+            self.json(405, {"error": "MCP here is stateless: POST one JSON-RPC message."}, {"Allow": "POST"})
+            return
+        if self.headers.get_content_type() != "application/json" or not self.same_origin():
+            raise Problem(403, "A JSON POST from an MCP client is required.")
+        version_header = self.headers.get("MCP-Protocol-Version")
+        if version_header and version_header not in mcp_tools.PROTOCOL_VERSIONS:
+            raise Problem(400, "Unsupported MCP-Protocol-Version.")
+        message = self.read_json()
+        server = self.server
+        context = lambda: mcp_tools.Context(
+            server.pool, actor_for(identity, server.actor, "mcp"), resources, canonical,
+            render_markdown, read_state, change)
+        response = mcp_tools.handle(message, context, {"name": SERVICE, "title": "LinkCite editorial",
+                                                       "version": version()}, Problem)
+        if response is None:
+            self.send_bytes(202, b"", "application/json; charset=utf-8")
+        else:
+            self.json(200, response)
 
     def dispatch(self):
-        # Only accept the literal loopback hosts. Prevent DNS-rebinding access.
-        if self.headers.get("Host") not in self.server.allowed_hosts:
-            raise Problem(403, "Invalid host.")
         url = urlsplit(self.path)
         params = parse_qs(url.query)
         iri = params.get("iri", [""])[0]
         if self.server.mode == "public":
+            # Only accept the literal loopback hosts. Prevent DNS-rebinding access.
+            if self.headers.get("Host") not in self.server.allowed_hosts:
+                raise Problem(403, "Invalid host.")
             if self.command not in ("GET", "HEAD") or url.path != "/content":
                 raise Problem(404, "Not found.")
             doc = params.get("document", [""])[0]
@@ -209,14 +278,24 @@ class Handler(BaseHTTPRequestHandler):
                     (doc,)).fetchall()
             self.json(200, {r["iri"]: self.server.html_cache.render(r["published_markdown"]) for r in rows})
             return
-        if not self.authenticated():
-            self.json(401, {"error": "Authentication required."},
-                      {"WWW-Authenticate": 'Basic realm="LinkCite editorial", charset="UTF-8"'})
+        try:
+            identity = self.server.access.authorize(self.headers, self.client_address[0])
+        except AccessError as exc:
+            raise Problem(exc.status, exc.message)
+        if url.path == "/mcp":
+            self.mcp(identity)
             return
         if self.command in ("GET", "HEAD"):
-            assets = {"/": ("admin.html", "text/html; charset=utf-8"),
-                      "/admin.js": ("admin.js", "text/javascript; charset=utf-8"),
-                      "/admin.css": ("admin.css", "text/css; charset=utf-8")}
+            if url.path == "/health":
+                self.json(200, health(self.server.pool, self.server.admin_url))
+                return
+            if url.path == "/":
+                self.send_bytes(302, b"", "text/plain; charset=utf-8", {"Location": "/admin"})
+                return
+            assets = {"/admin": ("admin.html", "text/html; charset=utf-8"),
+                      "/admin/": ("admin.html", "text/html; charset=utf-8"),
+                      "/admin/admin.js": ("admin.js", "text/javascript; charset=utf-8"),
+                      "/admin/admin.css": ("admin.css", "text/css; charset=utf-8")}
             if url.path in assets:
                 name, mime = assets[url.path]
                 self.send_bytes(200, (Path(__file__).parent / name).read_bytes(), mime)
@@ -248,26 +327,19 @@ class Handler(BaseHTTPRequestHandler):
             raise Problem(404, "Not found.")
         if self.command != "POST" or url.path not in ("/api/preview", "/api/change"):
             raise Problem(404, "Not found.")
-        # Same-origin AJAX only; no CORS. Basic auth on its own would not prevent CSRF.
-        origin = self.headers.get("Origin")
-        if (origin != "http://" + self.headers["Host"] or
+        # Same-origin AJAX only; no CORS. The custom header and JSON type force a preflight.
+        if (self.headers.get("Origin") is None or not self.same_origin() or
                 self.headers.get("X-LinkCite-Editor") != "1" or
                 self.headers.get_content_type() != "application/json"):
             raise Problem(403, "Same-origin editor request required.")
-        try:
-            size = int(self.headers.get("Content-Length", "0"))
-            if not 0 < size <= MAX_BODY:
-                raise Problem(413, "Request too large or empty.")
-            body = json.loads(self.rfile.read(size))
-        except (ValueError, UnicodeError):
-            raise Problem(400, "Invalid JSON.")
+        body = self.read_json()
         if not isinstance(body, dict):
             raise Problem(400, "JSON object required.")
         if url.path == "/api/preview":
             self.json(200, {"html": str(render_markdown(check_text(body.get("markdown"), "Markdown")))})
         else:
             with self.server.pool.connection() as conn:
-                value = change(conn, body, self.server.actor)
+                value = change(conn, body, actor_for(identity, self.server.actor))
             self.json(200, value)
 
     def handle_request(self):
@@ -295,28 +367,29 @@ def main():
     # One environment file serves both units; each mode reads only its own role's
     # DSN, and the systemd units unset the other mode's secrets before start.
     dsn = os.environ[DSN_VARIABLES[args.mode]]
-    port = 7880 if args.mode == "public" else 7881
+    port = 7880 if args.mode == "public" else int(os.environ.get("LINKCITE_EDITORIAL_PORT", ADMIN_PORT))
     # Warm persistent connections. The reader has a tightly bounded transaction time.
     timeout = 50 if args.mode == "public" else 5000
     with ConnectionPool(dsn, min_size=1, max_size=8 if args.mode == "public" else 3,
                         timeout=0.05 if args.mode == "public" else 2,
                         kwargs={"row_factory": dict_row, "connect_timeout": 3,
                                 "options": f"-c statement_timeout={timeout}"}) as pool:
-        server = Server(("127.0.0.1", port), Handler)
+        server = Server(("127.0.0.1" if args.mode == "public" else "0.0.0.0", port), Handler)
         server.mode, server.pool = args.mode, pool
-        server.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
         if args.mode == "public":
+            server.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
             server.html_cache = PublishedHTMLCache()
         if args.mode == "admin":
-            actor = os.environ.get("LINKCITE_EDITORIAL_USER", "editor")
-            password = os.environ["LINKCITE_EDITORIAL_PASSWORD"]
-            if len(password) < 8 or ":" in actor:
-                raise ValueError("Set a strong admin password (at least 8 characters).")
-            server.actor = actor
-            server.auth = "Basic " + base64.b64encode(f"{actor}:{password}".encode()).decode()
+            # Who LAN edits are recorded as; Access sign-ins are recorded by their email.
+            server.actor = os.environ.get("LINKCITE_EDITORIAL_USER", "editor")
+            lan_hosts = os.environ.get("LINKCITE_LAN_HOSTS", "id-linkcite.localdomain,id-linkcite").split(",")
+            server.access = Access(os.environ.get("ACCESS_TEAM_DOMAIN"), lan_hosts)
+            server.admin_url = f"http://{lan_hosts[0].strip()}:{port}/admin"
+            if not server.access.issuer:
+                LOG.warning("ACCESS_TEAM_DOMAIN is unset or invalid: requests through Cloudflare will be refused.")
         for name in SECRET_VARIABLES:
             os.environ.pop(name, None)
-        LOG.info("%s listening on loopback:%s", args.mode, port)
+        LOG.info("%s listening on %s:%s", args.mode, server.server_address[0], port)
         try:
             server.serve_forever()
         finally:

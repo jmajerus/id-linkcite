@@ -347,6 +347,10 @@ def write_pages(dataset, base, out: Path):
     resources = reader_resources(public, base)
     out.parent.mkdir(parents=True, exist_ok=True)
     (out.parent / 'editorial-resources.json').write_text(json.dumps(resources, ensure_ascii=False, sort_keys=True), encoding='utf-8')
+    # The public RDF text each page shows above its editorial Markdown, for editors and agents drafting it.
+    canonical = {iri: {k: v for k, v in resource_text(public, iri).items() if v} for iri in resources}
+    (out.parent / 'editorial-canonical.json').write_text(
+        json.dumps({iri: text for iri, text in canonical.items() if text}, ensure_ascii=False, sort_keys=True), encoding='utf-8')
     pages = [catalog.overview(), *catalog.pattern_pages(), *catalog.tag_pages(),
              frameworks.overview(), *frameworks.pages()]
     known = {context['iri'] for _, _, context in pages}

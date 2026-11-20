@@ -1,5 +1,5 @@
 [Unit]
-Description=LinkCite editorial admin service (loopback only)
+Description=LinkCite editorial admin and MCP service (port 8000)
 After=network-online.target
 Wants=network-online.target
 
