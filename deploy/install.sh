@@ -46,6 +46,27 @@ if systemctl is-enabled --quiet oxigraph 2>/dev/null || systemctl is-active --qu
   echo 'Stopped and disabled the old oxigraph service; its data in /var/lib/oxigraph is untouched.'
 fi
 
+# Editorial units once read editorial-public.env and editorial-admin.env, each with
+# LINKCITE_EDITORIAL_DSN. Build the single editorial.env from them once; keep the
+# old files so a rollback to that release still starts.
+ENV_DIR=/etc/linkcite
+if test ! -e "$ENV_DIR/editorial.env" && { test -f "$ENV_DIR/editorial-public.env" || test -f "$ENV_DIR/editorial-admin.env"; }; then
+  (
+    umask 0077
+    {
+      echo '# Generated from editorial-public.env and editorial-admin.env.'
+      test ! -f "$ENV_DIR/editorial-public.env" ||
+        sed -n 's/^[[:space:]]*LINKCITE_EDITORIAL_DSN=/LINKCITE_EDITORIAL_READER_DSN=/p' "$ENV_DIR/editorial-public.env"
+      test ! -f "$ENV_DIR/editorial-admin.env" ||
+        sed -n -e 's/^[[:space:]]*LINKCITE_EDITORIAL_DSN=/LINKCITE_EDITORIAL_EDITOR_DSN=/p' \
+               -e '/^[[:space:]]*LINKCITE_EDITORIAL_\(USER\|PASSWORD\)=/p' "$ENV_DIR/editorial-admin.env"
+    } > "$ENV_DIR/editorial.env.tmp"
+    chown root:root "$ENV_DIR/editorial.env.tmp"
+    mv "$ENV_DIR/editorial.env.tmp" "$ENV_DIR/editorial.env"
+  )
+  echo "Created $ENV_DIR/editorial.env from the per-mode editorial environment files (kept for rollback)."
+fi
+
 previous=$(readlink /opt/id-linkcite/current || true)
 previous_store=$(readlink /var/lib/id-linkcite/store || true)
 switch() {  # release store
@@ -57,6 +78,12 @@ switch() {  # release store
     unit="id-linkcite-editorial-$mode.service"
     if systemctl is-enabled --quiet "$unit"; then
       if test -f "$1/editorial_service/server.py"; then
+        # Units change between releases (e.g. their environment file); install the
+        # switched-to release's copy so a rollback also restores the matching unit.
+        if test -f "$1/deploy/$unit"; then
+          install -m 0644 "$1/deploy/$unit" /etc/systemd/system/
+          systemctl daemon-reload
+        fi
         systemctl restart "$unit" || echo "Warning: $unit could not restart" >&2
       else
         systemctl stop "$unit" || true

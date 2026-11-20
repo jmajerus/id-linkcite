@@ -35,26 +35,36 @@ Reassign or archive retired resources administratively after reviewing identity.
 
 ## One-time database provisioning
 
-The database is `id-linkcite` on postgresql.localdomain. In an administrative
-psql session connected to it, create a non-login owner and the two login roles
-(role names are fixed by the migration):
+The database is `id-linkcite` on postgresql.localdomain. Connect an
+administrative psql session to the server's maintenance database (for example
+`psql "postgresql://ADMIN@postgresql.localdomain/postgres?sslmode=require"`),
+then create a non-login owner, the two login roles (names are fixed by the
+migration) and the database:
 
 ```sql
 CREATE ROLE linkcite_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
 CREATE ROLE linkcite_reader LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
 CREATE ROLE linkcite_editor LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-ALTER DATABASE "id-linkcite" OWNER TO linkcite_owner;
+CREATE DATABASE "id-linkcite" OWNER linkcite_owner
+    TEMPLATE template0 ENCODING 'UTF8' LOCALE_PROVIDER builtin BUILTIN_LOCALE 'C.UTF-8';
 REVOKE ALL ON DATABASE "id-linkcite" FROM PUBLIC;
 GRANT CONNECT ON DATABASE "id-linkcite" TO linkcite_reader, linkcite_editor;
 ```
 
+If the database was already created by an administrator, replace the
+`CREATE DATABASE` statement with `ALTER DATABASE "id-linkcite" OWNER TO linkcite_owner;`.
+The `builtin` locale provider requires PostgreSQL 17 or later; on older servers
+use `LOCALE 'C.UTF-8'` instead. The schema does not depend on collation.
+
 Use psql's interactive `\password linkcite_reader` and
 `\password linkcite_editor` to set different strong passwords rather than
 committing or sharing credentials; `\password` hashes them client-side, so the
-plaintext never reaches server logs. Then apply the migration as the owner role:
+plaintext never reaches server logs. Then connect to `id-linkcite` itself and
+apply the migration as the owner role:
 
 ```sh
-psql "$ADMIN_URL" -X -v ON_ERROR_STOP=1 -c 'SET ROLE linkcite_owner' -f sql/001-editorial.sql
+psql "postgresql://ADMIN@postgresql.localdomain/id-linkcite?sslmode=require" \
+  -X -v ON_ERROR_STOP=1 -c 'SET ROLE linkcite_owner' -f sql/001-editorial.sql
 ```
 
 Never apply it directly as a superuser or as a superuser-owned database's
