@@ -16,8 +16,11 @@ function setDirty() { dirty = working.draft_markdown !== state.draft_markdown ||
 function filter() {
   const query=$('search').value.toLowerCase();
   const matches=Object.entries(registry).filter(([iri,label])=>(iri+' '+label).toLowerCase().includes(query));
-  $('resource').replaceChildren(...matches.map(([iri,label])=>new Option(label+' — '+iri,iri)));
-  if (state && matches.some(([iri])=>iri===state.iri)) $('resource').value=state.iri;
+  const shown=matches.slice(0,500);
+  if (state && !shown.some(([iri])=>iri===state.iri)) shown.unshift([state.iri,registry[state.iri]]);
+  $('resource').replaceChildren(...shown.map(([iri,label])=>new Option(label+' — '+iri,iri)));
+  $('search').title=matches.length>500?'Showing first 500 results. Refine the search.':matches.length+' results';
+  if (state && shown.some(([iri])=>iri===state.iri)) $('resource').value=state.iri;
   else $('resource').selectedIndex=-1;
 }
 async function preview() {
@@ -53,10 +56,10 @@ async function history() {
 async function open(iri) {
   if(!iri||busy)return;
   if(dirty&&!confirm('Discard unsaved edits?')) { $('resource').value=state.iri;return; }
-  busy=true;
+  busy=true; $('resource').disabled=true; $('markdown').disabled=true;
   try{apply(await api(endpoint('state',iri)));await history();message('Resource loaded.');}
   catch(e){message(e.message);}
-  finally{busy=false;}
+  finally{busy=false; $('resource').disabled=false; $('markdown').disabled=false; filter();}
 }
 async function change(action) {
   if(!state||busy)return;
@@ -93,4 +96,4 @@ $('history').addEventListener('change',async()=>{
   }catch(e){message(e.message);}
 });
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
-(async()=>{try{registry=await api('/api/resources');filter();const iri=new URLSearchParams(location.search).get('iri');if(registry[iri]){$('resource').value=iri;await open(iri);}message('Select a resource to edit.');}catch(e){message(e.message);}})();
+(async()=>{try{registry=await api('/api/resources');filter();const iri=new URLSearchParams(location.search).get('iri');if(registry[iri]){await open(iri);}else message('Select a resource to edit.');}catch(e){message(e.message);}})();
