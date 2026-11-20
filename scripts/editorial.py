@@ -1,11 +1,5 @@
-"""Resolve published editorial Markdown by IRI and select public RDF prose.
-
-The source directory is an explicit publication allowlist: all .md files in it
-are intended for the public site. Drafts belong elsewhere. No private graph is
-read here, and editorial Markdown is not added to the RDF dataset.
-"""
 import re
-from pathlib import Path
+from base64 import urlsafe_b64encode
 
 import bleach
 import markdown
@@ -29,32 +23,24 @@ def render_markdown(text):
                               protocols={"http", "https", "mailto"}, strip=True))
 
 
-def load_snippets(root: Path, graph, base: str):
-    """Map explicit published files to existing public resource IRIs.
+def editorial_marker(iri):
+    """Opaque marker to be replaced once by the public reader plugin."""
+    encoded = urlsafe_b64encode(iri.encode("utf-8")).decode("ascii")
+    return Markup(f"<!--LINKCITE-EDITORIAL:{encoded}-->")
 
-    E.g. patterns/roach-motel.md and patterns/vocab#AntiPattern.md.
-    Reject orphan files instead of silently publishing stale content.
-    """
-    found = {}
-    if not root.exists():
-        return found
-    for file in sorted(root.rglob("*.md")):
-        if file.is_symlink() or not file.resolve().is_relative_to(root.resolve()):
-            raise ValueError(f"Unsafe editorial file: {file}")
-        relative = file.relative_to(root).as_posix()[:-3]
-        document, sep, fragment = relative.partition("#")
+
+def reader_resources(graph, base):
+    resources = {}
+    for node in set(graph.subjects()):
+        iri = str(node)
+        if not isinstance(node, URIRef) or not iri.startswith(base):
+            continue
+        document, _, fragment = iri[len(base):].partition("#")
         if not all(SEGMENT.fullmatch(p) for p in document.split("/")) or (
-                sep and not SEGMENT.fullmatch(fragment)):
-            raise ValueError(f"Invalid editorial IRI path: {relative}")
-        iri = base + relative
-        if (URIRef(iri), None, None) not in graph:
-            raise ValueError(f"Editorial file {file} does not match a public IRI: {iri}")
-        if sep and (URIRef(base + document), None, None) not in graph:
-            raise ValueError(f"Missing public document for {iri}")
-        text = file.read_text(encoding="utf-8").strip()
-        if text:
-            found[iri] = text
-    return found
+                fragment and not SEGMENT.fullmatch(fragment)):
+            continue
+        resources[iri] = generic_context(graph, iri)["label"]
+    return resources
 
 
 def english_literals(graph, node, predicate):
