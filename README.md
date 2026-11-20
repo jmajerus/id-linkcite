@@ -7,7 +7,7 @@ The vocabularies themselves live in their own repositories, which stay the sourc
 | Path | Vocabulary | Source |
 |---|---|---|
 | `/patterns` | Dehumanization Patterns | `dehumanization-patterns` (the ontology and its SKOS projection) |
-| `/frameworks` | Dehumanization Frameworks | `struggle-against-dehumanization` (`build/dehumanization-frameworks.ttl`) |
+| `/frameworks` | Dehumanization Frameworks | `dehumanization-frameworks` (committed `dehumanization-frameworks.ttl`; derived from the manuscript) |
 | `/index` | Concept Index (draft, not yet published) | `terminology-mcp/tmp/concept-index` |
 
 ## How it runs
