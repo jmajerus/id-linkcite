@@ -102,8 +102,6 @@ ul.patterns { list-style: none; padding: 0; margin: 0 0 1rem; }
 .badge.cluster { color: var(--muted); background: var(--note-bg); }
 .placement { color: var(--muted); margin: 0 0 1.2rem; }
 .lede { font-family: var(--serif); font-size: 1.15rem; }
-.pending { border-left: 3px solid var(--rule); padding: 0.1rem 0 0.1rem 1rem; color: var(--muted); font-style: italic; margin: 1.5rem 0 2rem; }
-.pending p { margin: 0; }
 .facet h2 { font-size: 1.2rem; margin: 1.8rem 0 0.3rem; }
 ul.chips { list-style: none; padding: 0; margin: 0.4rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 ul.chips a { display: inline-block; padding: 0.25rem 0.7rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
@@ -139,3 +137,10 @@ ul.terms ul.terms { padding-left: 1.2rem; border-left: 2px solid var(--rule); ma
 .here { font-weight: 600; }
 .browse { margin: 0.8rem 0 0; font-size: 0.95rem; }
 .facet h3 { font-size: 1.05rem; margin: 1.2rem 0 0.3rem; }
+
+/* Canonical prose and supplemental editorial material. */
+.rdf-text p { white-space: pre-line; overflow-wrap: anywhere; }
+.editorial img { max-width: 100%; height: auto; }
+.editorial pre { overflow-x: auto; }
+.editorial table { border-collapse: collapse; display: block; overflow-x: auto; }
+.editorial th, .editorial td { border: 1px solid var(--rule); padding: .45rem .7rem; }
