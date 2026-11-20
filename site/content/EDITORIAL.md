@@ -11,13 +11,14 @@ Open the private editor through the SSH tunnel described below. Search the
 current public resource registry by label or IRI. Select a resource, then use
 the Public content draft or Private notes tab. Both have Markdown formatting
 controls and a live server-rendered preview. The preview uses the same sanitizer
-as publication and suppresses external images and active links for privacy.
+as the reader service and suppresses external images and active links for privacy.
 
 - Save draft and notes: record changed text, privately.
-- Publish public draft: save both working fields, render and sanitize the public
-  draft, and update public HTML in the same transaction. Private notes do not
-  enter the published fields. Changes appear on the next reader request.
-- Unpublish: remove public HTML, retain editable draft, notes and history.
+- Publish public draft: save both working fields and atomically copy only the
+  public draft to published Markdown. The reader renders and sanitizes the new
+  public text on a cache miss. Private notes do not enter the published fields.
+  Changes appear on the next successful reader request.
+- Unpublish: remove published Markdown, retain editable draft, notes and history.
 - Revision history: inspect previous snapshots, including published Markdown at
   that revision. Restore draft and notes makes a new revision; it does not change
   existing published content until you explicitly publish. No-op saves do not
@@ -55,9 +56,17 @@ The public role must not be a member of the editor or owner roles.
 
 The schema includes current state, append-only application revision history,
 and a restricted public view exposing only the IRI, its document IRI and
-sanitized published HTML. The history records snapshots of the draft, notes
-and published Markdown. Normal editing should use the editor service instead
-of direct table writes, which bypass the application revision transaction.
+published Markdown. The history records snapshots of the draft, notes
+and published Markdown. Neither application role has direct table-write
+permissions. The editor can execute only the owner-controlled transition
+function for writes; row locking, revision checks and history snapshots are
+inside that function. It cannot move an IRI, inject stored HTML, or rewrite
+a revision. The reader sanitizes all public Markdown before inserting HTML.
+The function's actor label is supplied by the authenticated admin service;
+it is not a tamper-proof identity audit against compromise of editor credentials.
+This initial schema replaces the earlier unmerged draft. If the earlier draft
+was already provisioned, do not drop or recreate its tables; arrange a reviewed
+migration that preserves existing editorial data first.
 Back up the database independently of website releases; include private notes
 and history in the protected backup policy.
 
@@ -76,7 +85,9 @@ node --check editorial_service/admin.js
 For database integration tests, create a disposable database with the migration
 applied and set LINKCITE_TEST_EDITOR_DSN and LINKCITE_TEST_READER_DSN locally.
 Do not use production DSNs. The tests check automatic snapshots, no-op saves,
-optimistic concurrency, restoration and reader-role denial of private tables.
+optimistic concurrency, restoration, denial of direct writes by the editor,
+and reader-role denial of private tables and the write function. Cache tests
+also check sanitization and eviction.
 
 Review the build's public.nq and generated pages; verify full manuscript and
 private RDF editorial properties are not published. The old --definitions flag
@@ -147,8 +158,13 @@ Reader shells are generated at vocabulary build time. Trifid uses a bounded
 32 MiB lazy HTML cache, requests the published HTML from the local public
 service in parallel, and inserts it into the matching IRI markers. The public
 service uses a persistent PostgreSQL pool and one indexed query per document,
-including any hash fragments. Markdown parsing happens on preview/publish,
-not on reader requests. The public request has a 100 ms fetch deadline and
+including any hash fragments. The database stores Markdown, not trusted HTML.
+The reader sanitizes and renders published Markdown on a cache miss and uses
+an additional bounded 32 MiB LRU cache (up to 1024 entries) keyed by the exact
+published text. Warm requests do not parse Markdown; new or evicted text has
+a rendering cost. Draft and private text are never inputs to the reader cache.
+Unpublishing or changing the database text takes effect on the next lookup.
+The public request has a 100 ms fetch deadline and
 falls back to canonical RDF reader HTML on error. RDF content negotiation
 does not contact PostgreSQL.
 
