@@ -14,15 +14,19 @@ A new property therefore stays private until it is added here on purpose.
 """
 import argparse
 import html
+import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from rdflib import Dataset, Graph, Literal, Namespace, URIRef
+from rdflib.util import guess_format
 from rdflib.namespace import DCTERMS, OWL, RDF, RDFS, SKOS
 
 from pages import write_pages
+from source_state import source_state
 
 ROOT = Path(__file__).resolve().parent.parent
 PC = Namespace('https://id.linkcite.org/patterns/vocab#')
@@ -96,11 +100,15 @@ def main():
     parser.add_argument('--definitions', action='store_true', help=argparse.SUPPRESS)  # legacy flag; always included
     parser.add_argument('--out', type=Path, default=ROOT / 'build')
     args = parser.parse_args()
+    # Captured before reading anything, including vocabularies.json, so edits made
+    # during the build count as stale.
+    site = source_state(ROOT)
     config = json.loads((ROOT / 'vocabularies.json').read_text())
     base = config['base'].rstrip('/')
 
     dataset = Dataset()
-    manifest = {'base': base + '/', 'definitions': True, 'vocabularies': []}
+    manifest = {'base': base + '/', 'definitions': True, 'site': site, 'vocabularies': []}
+    (args.out / 'manifest.json').unlink(missing_ok=True)  # no manifest until the build completes
     for vocab in config['vocabularies']:
         if not vocab.get('publish', True):
             print(f"{vocab['path']}: not published (\"publish\": false)")
@@ -112,8 +120,10 @@ def main():
             path = (ROOT / name).resolve()
             if not path.exists():
                 sys.exit(f"{vocab['path']}: missing {path}. {vocab.get('build', '')}".strip())
-            source.parse(path)
-            sources.append({'file': name, 'commit': source_commit(path)})
+            # Hash exactly the bytes parsed: the files may live in other, uncommitted checkouts.
+            data = path.read_bytes()
+            source.parse(data=data, format=guess_format(str(path)))
+            sources.append({'file': name, 'commit': source_commit(path), 'sha256': hashlib.sha256(data).hexdigest()})
         graph = dataset.graph(URIRef(prefix))
         for triple in public(source, prefix):
             graph.add(triple)
@@ -134,10 +144,14 @@ def main():
     # Sorted, so an unchanged build gives an unchanged file.
     lines = sorted(set(dataset.serialize(format='nquads').splitlines()) - {''})
     (args.out / 'public.nq').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    (args.out / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     (args.out / 'welcome.hbs').write_text(welcome(manifest), encoding='utf-8')
     pages = write_pages(dataset, base + '/', args.out / 'pages')
     print(f'Wrote {len(pages)} reader pages')
+    # Last: tools/deploy.py treats the manifest's site state as proof of a complete build.
+    # Atomically, so an interrupted write never leaves a partial manifest.
+    temporary = args.out / 'manifest.json.tmp'
+    temporary.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    os.replace(temporary, args.out / 'manifest.json')
     print(f"Wrote {args.out / 'public.nq'}: {len(lines)} quads, including available definitions")
 
 
