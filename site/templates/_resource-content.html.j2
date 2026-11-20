@@ -7,8 +7,4 @@
 </section>
 {% endif %}
 {% endfor %}
-{% if editorial %}
-<section class="facet editorial">
-  {{ editorial | editorial_md }}
-</section>
-{% endif %}
+{{ editorial_iri | editorial_marker }}
