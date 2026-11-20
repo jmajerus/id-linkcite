@@ -14,6 +14,10 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from collections import OrderedDict
+from threading import Lock
+
+import psycopg
 from urllib.parse import parse_qs, urlsplit
 
 from psycopg.rows import dict_row
@@ -73,54 +77,68 @@ def change(conn, body, actor):
     if action not in {"save", "publish", "unpublish", "restore"}:
         raise Problem(400, "Unknown action.")
     expected = body.get("revision_number")
-    if type(expected) is not int or expected < 0:
+    if type(expected) is not int or not 0 <= expected < 2**63-1:
         raise Problem(400, "Expected revision number is required.")
     note = body.get("change_note") or None
     if note is not None:
         note = check_text(note, "Change note")
-    conn.execute("INSERT INTO editorial.resource_content(iri) VALUES (%s) ON CONFLICT DO NOTHING", (iri,))
-    row = conn.execute(
-        "SELECT * FROM editorial.resource_content WHERE iri=%s FOR UPDATE", (iri,)).fetchone()
-    if row["revision_number"] != expected:
-        raise Problem(409, "Someone changed this resource. Reload before saving.")
-    draft, private = row["draft_markdown"], row["private_markdown"]
-    published, html, published_at = row["published_markdown"], row["published_html"], row["published_at"]
+    draft, private, restore = None, None, None
     if action == "restore":
-        number = body.get("restore_revision")
-        if type(number) is not int:
+        restore = body.get("restore_revision")
+        if type(restore) is not int or not 0 < restore < 2**63:
             raise Problem(400, "Revision number is required.")
-        old = conn.execute(
-            "SELECT draft_markdown, private_markdown FROM editorial.resource_revision "
-            "WHERE iri=%s AND revision_number=%s", (iri, number)).fetchone()
-        if not old:
-            raise Problem(404, "Revision not found.")
-        draft, private = old["draft_markdown"], old["private_markdown"]
     else:
         draft = check_text(body.get("draft_markdown"), "Draft")
         private = check_text(body.get("private_markdown"), "Private notes")
-    if action == "publish":
-        published = draft
-        html = str(render_markdown(draft))
-    elif action == "unpublish":
-        published, html, published_at = None, None, None
-    unchanged = (draft, private, published, html) == (
-        row["draft_markdown"], row["private_markdown"], row["published_markdown"], row["published_html"])
-    if unchanged and action != "restore":
-        return read_state(conn, iri)
-    # Private/draft saves do not reset the publication timestamp.
-    if action == "publish" and (published, html) != (row["published_markdown"], row["published_html"]):
-        published_at = conn.execute("SELECT now() AS ts").fetchone()["ts"]
-    revision = expected + 1
-    conn.execute(
-        "UPDATE editorial.resource_content SET draft_markdown=%s, private_markdown=%s, "
-        "published_markdown=%s, published_html=%s, published_at=%s, revision_number=%s, updated_at=now() "
-        "WHERE iri=%s", (draft, private, published, html, published_at, revision, iri))
-    conn.execute(
-        "INSERT INTO editorial.resource_revision "
-        "(iri,revision_number,action,draft_markdown,private_markdown,published_markdown,"
-        "published_at,changed_by,change_note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-        (iri, revision, action, draft, private, published, published_at, actor, note))
-    return read_state(conn, iri)
+    try:
+        # The function alone has write privileges; the editor has SELECT/EXECUTE.
+        # A savepoint also permits callers to recover from a stale revision safely.
+        with conn.transaction():
+            return conn.execute(
+                f"SELECT {STATE_COLUMNS} FROM editorial.change_resource("
+                "%s::text,%s::bigint,%s::text,%s::text,%s::text,%s::bigint,%s::text,%s::text)",
+                (iri, expected, action, draft, private, restore, actor, note)).fetchone()
+    except psycopg.errors.SerializationFailure as exc:
+        raise Problem(409, "Someone changed this resource. Reload before saving.") from exc
+    except psycopg.errors.NoDataFound as exc:
+        raise Problem(404, "Revision not found.") from exc
+    except psycopg.errors.InvalidParameterValue as exc:
+        raise Problem(400, "Invalid editorial change.") from exc
+
+
+class PublishedHTMLCache:
+    """Bounded LRU of sanitized HTML keyed by exact published Markdown.
+
+    Only the reader view supplies inputs. A changed or unpublished document
+    cannot retrieve its former cache entry by IRI or revision number.
+    """
+    def __init__(self, max_bytes=32 * 1024 * 1024, max_entries=1024):
+        self.max_bytes, self.max_entries = max_bytes, max_entries
+        self.entries = OrderedDict()
+        self.size = 0
+        self.lock = Lock()
+
+    def render(self, source):
+        with self.lock:
+            if source in self.entries:
+                self.entries.move_to_end(source)
+                return self.entries[source][0]
+        # Always sanitize a cache miss, even if the editor bypassed the UI.
+        html = str(render_markdown(source))
+        size = sys.getsizeof(source) + sys.getsizeof(html)
+        if size > self.max_bytes or not self.max_entries:
+            return html
+        with self.lock:
+            if source in self.entries:
+                self.entries.move_to_end(source)
+                return self.entries[source][0]
+            while self.entries and (self.size + size > self.max_bytes or
+                                    len(self.entries) >= self.max_entries):
+                _, (_, old_size) = self.entries.popitem(last=False)
+                self.size -= old_size
+            self.entries[source] = (html, size)
+            self.size += size
+        return html
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -175,9 +193,9 @@ class Handler(BaseHTTPRequestHandler):
                 raise Problem(400, "Invalid document IRI.")
             with self.server.pool.connection(timeout=0.045) as conn:
                 rows = conn.execute(
-                    "SELECT iri, published_html FROM editorial.public_content WHERE document_iri=%s",
+                    "SELECT iri, published_markdown FROM editorial.public_content WHERE document_iri=%s",
                     (doc,)).fetchall()
-            self.json(200, {r["iri"]: r["published_html"] for r in rows})
+            self.json(200, {r["iri"]: self.server.html_cache.render(r["published_markdown"]) for r in rows})
             return
         if not self.authenticated():
             self.json(401, {"error": "Authentication required."},
@@ -273,6 +291,8 @@ def main():
         server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
         server.mode, server.pool = args.mode, pool
         server.allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        if args.mode == "public":
+            server.html_cache = PublishedHTMLCache()
         if args.mode == "admin":
             actor = os.environ.get("LINKCITE_EDITORIAL_USER", "editor")
             password = os.environ["LINKCITE_EDITORIAL_PASSWORD"]
