@@ -8,7 +8,7 @@
   <h1>{{ t.label }}</h1>
   {% if t.alt %}<p class="placement">Also called {{ t.alt | join(', ') }}</p>{% endif %}
   {% if focus %}<p class="lede">{{ focus }}</p>{% endif %}
-  <div class="pending">{{ pending | md }}</div>
+  {% include '_resource-content.html.j2' %}
 
   {% for role in roles %}
   <section class="facet">
