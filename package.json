@@ -9,7 +9,7 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "python3 scripts/build.py",
+    "build": ".venv/bin/python scripts/build.py",
     "start": "trifid --config trifid/config.yaml",
     "deploy": "python3 tools/deploy.py"
   },
