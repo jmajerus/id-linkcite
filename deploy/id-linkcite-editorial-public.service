@@ -15,7 +15,9 @@ Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+# libpq stats ~/.postgresql/postgresql.crt; with ProtectHome=true that fails with
+# EACCES (fatal) instead of ENOENT (skipped). tmpfs hides /home but leaves it empty.
+ProtectHome=tmpfs
 PrivateTmp=true
 
 [Install]
