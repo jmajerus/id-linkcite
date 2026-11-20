@@ -310,8 +310,8 @@ def main():
         if args.mode == "admin":
             actor = os.environ.get("LINKCITE_EDITORIAL_USER", "editor")
             password = os.environ["LINKCITE_EDITORIAL_PASSWORD"]
-            if len(password) < 20 or ":" in actor:
-                raise ValueError("Set a strong admin password (at least 20 characters).")
+            if len(password) < 8 or ":" in actor:
+                raise ValueError("Set a strong admin password (at least 8 characters).")
             server.actor = actor
             server.auth = "Basic " + base64.b64encode(f"{actor}:{password}".encode()).decode()
         for name in SECRET_VARIABLES:

@@ -131,7 +131,7 @@ Create one mode-0600 root-owned systemd environment file using a local editor
 LINKCITE_EDITORIAL_READER_DSN="postgresql://linkcite_reader:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
 LINKCITE_EDITORIAL_EDITOR_DSN="postgresql://linkcite_editor:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
 LINKCITE_EDITORIAL_USER="editor"
-LINKCITE_EDITORIAL_PASSWORD="REPLACE_WITH_A_SEPARATE_STRONG_PASSWORD_AT_LEAST_20_CHARACTERS"
+LINKCITE_EDITORIAL_PASSWORD="REPLACE_WITH_A_SEPARATE_PASSWORD_OF_AT_LEAST_8_CHARACTERS"
 ```
 
 systemd reads the file as root before dropping privileges, so the service
