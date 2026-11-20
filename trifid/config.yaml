@@ -35,6 +35,12 @@ plugins:
     config:
       directory: file:../site/assets
 
+  favicon:
+    module: ./trifid/plugins/favicon.js
+    paths: /favicon.ico
+    config:
+      file: file:../site/assets/favicon.ico
+
   welcome:
     module: trifid-core/plugins/view.js
     paths: /
