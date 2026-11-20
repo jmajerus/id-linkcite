@@ -47,7 +47,7 @@
   {% if p.kind == 'cluster' and p.group and p.group.blurb %}<p class="lede">{{ p.group.blurb }}</p>{% endif %}
 
   {% set noun = 'cluster' if p.kind == 'cluster' else 'pattern' %}
-  <div class="pending">{{ (page.description_proposed if p.group and p.group.id == 'proposed' else page.description_pending.replace('{noun}', noun)) | md }}</div>
+  {% include '_resource-content.html.j2' %}
 
   {% if p.kind == 'cluster' %}{{ links('Patterns in this cluster', p.members) }}{% endif %}
   {{ links('Answered by', p.answered_by, page.answered_by) }}
