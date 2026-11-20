@@ -18,9 +18,9 @@
 {% endif %}
 {% if with_it %}
 <section class="facet"><h2>Often together with</h2>
-  <p class="blurb">Other {{ vocabulary.title | lower }} on the same patterns.</p>
+  <p class="blurb">Other {{ vocabulary.noun or vocabulary.title | lower }} on the same patterns.</p>
   <ul class="chips">{% for t, n in with_it %}<li><a href="{{ t.href }}">{{ t.name }} <span class="n">{{ n }}</span></a></li>{% endfor %}</ul>
 </section>
 {% endif %}
-<p class="more"><a href="{{ vocabulary.href }}">All {{ vocabulary.title | lower }}</a></p>
+<p class="more"><a href="{{ vocabulary.href }}">All {{ vocabulary.noun or vocabulary.title | lower }}</a></p>
 {% endblock %}
