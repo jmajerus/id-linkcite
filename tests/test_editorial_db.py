@@ -68,6 +68,35 @@ class DatabaseTests(unittest.TestCase):
                 "SELECT 1 FROM information_schema.columns WHERE table_schema='editorial' "
                 "AND table_name='resource_content' AND column_name='published_html'").fetchone())
 
+    def test_mcp_save_draft_keeps_notes_and_never_publishes(self):
+        import mcp_tools
+        from contextlib import contextmanager
+        from server import read_state, render_markdown
+        with psycopg.connect(os.environ["LINKCITE_TEST_EDITOR_DSN"], row_factory=dict_row) as conn:
+            conn.execute("BEGIN")
+            try:
+                class Pool:
+                    @contextmanager
+                    def connection(self, timeout=None):
+                        yield conn
+                registry = {IRI: "Test"}
+                with patch("server.resources", return_value=registry):
+                    change(conn, {"iri": IRI, "revision_number": 0, "action": "publish",
+                                  "draft_markdown": "Live", "private_markdown": "Notes"}, "test")
+                    ctx = mcp_tools.Context(Pool(), "mcp (test)", lambda: registry, dict,
+                                            render_markdown, read_state, change)
+                    saved = mcp_tools.save_draft(ctx, {"iri": IRI, "revision_number": 1, "draft_markdown": "Proposed"})
+                    self.assertEqual((saved["revision_number"], saved["published_markdown"]), (2, "Live"))
+                    self.assertTrue(saved["pending"])
+                    row = read_state(conn, IRI)
+                    self.assertEqual((row["draft_markdown"], row["private_markdown"]), ("Proposed", "Notes"))
+                    last = mcp_tools.list_revisions(ctx, {"iri": IRI})["revisions"][0]
+                    self.assertEqual((last["action"], last["changed_by"]), ("save", "mcp (test)"))
+                    with self.assertRaises(mcp_tools.ToolError):
+                        mcp_tools.save_draft(ctx, {"iri": IRI, "revision_number": 1, "draft_markdown": "Stale"})
+            finally:
+                conn.rollback()
+
     def test_reader_cannot_read_private_tables(self):
         with psycopg.connect(os.environ["LINKCITE_TEST_READER_DSN"], row_factory=dict_row) as conn:
             conn.execute("SELECT iri,document_iri,published_markdown FROM editorial.public_content LIMIT 1")

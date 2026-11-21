@@ -67,6 +67,12 @@ if test ! -e "$ENV_DIR/editorial.env" && { test -f "$ENV_DIR/editorial-public.en
   echo "Created $ENV_DIR/editorial.env from the per-mode editorial environment files (kept for rollback)."
 fi
 
+# The editorial venv is provisioned once by hand; keep it current with this release's
+# requirements (a rollback's older release needs no package this one lacks).
+if test -x /opt/id-linkcite/editorial-venv/bin/pip; then
+  /opt/id-linkcite/editorial-venv/bin/pip install --quiet --disable-pip-version-check -r "$RELEASE/requirements.txt"
+fi
+
 previous=$(readlink /opt/id-linkcite/current || true)
 previous_store=$(readlink /var/lib/id-linkcite/store || true)
 switch() {  # release store

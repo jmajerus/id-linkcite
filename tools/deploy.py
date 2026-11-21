@@ -21,16 +21,16 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'scripts'))
-from source_state import stale_reasons  # noqa: E402
+from source_state import source_state, stale_reasons  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 HOST = os.environ.get('ID_LINKCITE_HOST', 'root@id-linkcite.localdomain')
-FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'editorial_service', 'scripts/editorial.py', 'requirements.txt', 'site/assets', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs', 'build/pages', 'build/editorial-resources.json']
+FILES = ['package.json', 'package-lock.json', 'trifid', 'deploy', 'editorial_service', 'scripts/editorial.py', 'requirements.txt', 'site/assets', 'build/public.nq', 'build/manifest.json', 'build/welcome.hbs', 'build/pages', 'build/editorial-resources.json', 'build/editorial-canonical.json']
 INSPECT = r'''
-for unit in id-linkcite id-linkcite-oxigraph oxigraph; do printf '%-22s %s %s\n' "$unit" "$(systemctl is-enabled $unit 2>/dev/null || true)" "$(systemctl is-active $unit 2>/dev/null || true)"; done
+for unit in id-linkcite id-linkcite-oxigraph id-linkcite-editorial-public id-linkcite-editorial-admin oxigraph; do printf '%-22s %s %s\n' "$unit" "$(systemctl is-enabled $unit 2>/dev/null || true)" "$(systemctl is-active $unit 2>/dev/null || true)"; done
 echo "release: $(readlink /opt/id-linkcite/current || echo none)"
 echo "store:   $(readlink /var/lib/id-linkcite/store || echo none)"
-ss -ltnp | awk 'NR == 1 || /:787[89] /'
+ss -ltnp | awk 'NR == 1 || /:(787[89]|7880|8000) /'
 '''
 
 
@@ -44,9 +44,21 @@ def release_id():
     return time.strftime('%Y%m%d-%H%M%S') + '-' + commit + ('-dirty' if dirty else '')
 
 
+def deployed_record():
+    """What /health reports as deployed: the branch, commit, time and whether it was clean."""
+    state = source_state(ROOT)
+    branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=ROOT, text=True).strip()
+    return {'branch': branch, 'commit': state['commit'],
+            'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'dirty': state['changes'] is not None}
+
+
 def archive():
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode='w:gz') as tar:
+        record = json.dumps(deployed_record(), indent=2).encode()
+        info = tarfile.TarInfo('deployed.json')
+        info.size, info.mtime, info.mode = len(record), int(time.time()), 0o644
+        tar.addfile(info, io.BytesIO(record))
         for name in FILES:
             path = ROOT / name
             if not path.exists():

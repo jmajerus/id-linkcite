@@ -7,7 +7,8 @@ semantic graph or deploy the site.
 
 ## Editing
 
-Open the private editor through the SSH tunnel described below. Search the
+Open the editor at http://id-linkcite.localdomain:8000/admin on the LAN, or at
+https://id-linkcite.majerus.us/admin from outside (Cloudflare Access). Search the
 current public resource registry by label or IRI. Select a resource, then use
 the Public content draft or Private notes tab. Both have Markdown formatting
 controls and a live server-rendered preview. The preview uses the same sanitizer
@@ -32,6 +33,30 @@ be published. This service is separate from the RDF publication filter.
 The database retains content for retired IRIs, but the public reader only
 inserts content into current resource shells, and the editor lists current IRIs.
 Reassign or archive retired resources administratively after reviewing identity.
+
+## Editing with an agent (MCP)
+
+The same service answers MCP at `/mcp`, like the authoring suite's other servers:
+`http://id-linkcite.localdomain:8000/mcp` on the LAN, and
+`https://id-linkcite.majerus.us/mcp` through Cloudflare, where Access and its
+Managed OAuth sign the client in. The tools:
+
+| Tool | Does |
+|---|---|
+| `search_resources` | Finds current IRIs by label or IRI words; filters to published, unpublished, or pending (draft differs from published) |
+| `get_content` | The term's canonical RDF text (shown above the Markdown on its page), its draft, published Markdown and revision number; private notes only if asked |
+| `list_revisions`, `get_revision` | History, as in the editor |
+| `preview_markdown` | Renders through the reader's sanitizer; saves nothing |
+| `save_draft` | Saves the public draft, keeping private notes unless given; needs the revision number it read |
+
+An agent can only save drafts. Publishing, unpublishing and restoring stay in
+`/admin`, so a saved draft is a proposal until you publish it. The history records
+agent saves as `mcp (<who>)`: the Access email through Cloudflare, or
+`LINKCITE_EDITORIAL_USER` on the LAN. A save against a stale revision fails and
+changes nothing. The service is stateless (one JSON answer per POST, no sessions).
+
+The canonical text comes from `build/editorial-canonical.json`, written by the
+build beside `editorial-resources.json` from the same public data.
 
 ## One-time database provisioning
 
@@ -116,11 +141,16 @@ is unnecessary. Deploy with the normal `python tools/deploy.py` command.
 
 ## One-time service provisioning on the id-linkcite LXC
 
-The public reader service and the private admin service bind to loopback only,
-ports 7880 and 7881 respectively. Trifid has no PostgreSQL credentials. It calls
-the public service, which uses the restricted reader role; the editor runs as a
-different Unix user with separate database credentials. Do not add either
-service to the public Cloudflare tunnel.
+The public reader service binds to loopback port 7880; only Trifid calls it,
+and it must never be added to the Cloudflare tunnel. Trifid has no PostgreSQL
+credentials. The reader service uses the restricted reader role. The admin
+service (editor, API and MCP) listens on port 8000 on every interface, as the
+authoring suite's servers do, runs as a different Unix user, and has separate
+database credentials. Direct requests from a private address naming this host
+(`id-linkcite.localdomain`, `id-linkcite`, `localhost` or an IP; override with
+`LINKCITE_LAN_HOSTS`) are trusted. Any request that came through Cloudflare, or
+names another host, needs a Cloudflare Access assertion that verifies against
+`ACCESS_TEAM_DOMAIN`'s keys; a missing or invalid one is refused.
 
 After the release containing editorial_service has been deployed, run as root:
 
@@ -141,8 +171,12 @@ Create one mode-0600 root-owned systemd environment file using a local editor
 LINKCITE_EDITORIAL_READER_DSN="postgresql://linkcite_reader:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
 LINKCITE_EDITORIAL_EDITOR_DSN="postgresql://linkcite_editor:REPLACE@postgresql.localdomain:5432/id-linkcite?sslmode=verify-full"
 LINKCITE_EDITORIAL_USER="editor"
-LINKCITE_EDITORIAL_PASSWORD="REPLACE_WITH_A_SEPARATE_PASSWORD_OF_AT_LEAST_8_CHARACTERS"
+ACCESS_TEAM_DOMAIN="https://REPLACE.cloudflareaccess.com"
 ```
+
+`LINKCITE_EDITORIAL_USER` is the name LAN edits are recorded under. Releases
+before the MCP service also required `LINKCITE_EDITORIAL_PASSWORD`; it is now
+ignored and can be removed once you no longer need to roll back to one.
 
 systemd reads the file as root before dropping privileges, so the service
 users never read it directly. Each unit's `UnsetEnvironment=` removes the
@@ -164,18 +198,32 @@ systemctl daemon-reload
 systemctl enable --now id-linkcite-editorial-public id-linkcite-editorial-admin
 ```
 
-From the workstation, create a secure port forward using an authorized SSH
-account:
+Deployments keep the editorial venv current: `install.sh` runs `pip install -r
+requirements.txt` in `/opt/id-linkcite/editorial-venv` when it exists, and
+reinstalls each enabled editorial unit from the release it switches to.
 
-```sh
-ssh -N -L 7881:127.0.0.1:7881 root@id-linkcite.localdomain
-```
+### Cloudflare
 
-Visit http://127.0.0.1:7881/ and authenticate with the separate editor login.
-The SSH tunnel protects the HTTP connection; the admin service rejects
-non-loopback Host headers, requires authentication, and checks same-origin
-JSON requests. Keep the admin service private. A Cloudflare Access-protected
-admin hostname, multiple named users and SSO would be separate enhancements.
+Configured in Cloudflare only, as for the suite's other servers:
+
+- **Tunnel route:** public hostname `id-linkcite.majerus.us` →
+  `http://id-linkcite.localdomain:8000`. Never route `id.linkcite.org` here.
+- **Access application** for `id-linkcite.majerus.us`, admitting only the owner,
+  with Managed OAuth for MCP clients.
+- **MCP server definition:** `https://id-linkcite.majerus.us/mcp`.
+
+The origin checks the assertion's signature, issuer, expiry and subject, not its
+audience, so recreating the Access application needs no change here. The admin
+pages also check that browser writes are same-origin JSON, and `/mcp` refuses
+non-JSON or cross-origin POSTs, so a web page cannot write drafts through a
+LAN browser.
+
+### Authoring suite
+
+Register the service in authoring-ops-mcp's `suites/authoring.json`, with
+`health` and `mcp` at `http://id-linkcite.localdomain:8000`. `/health` follows
+the suite's health contract: the version from `package.json`, what was deployed
+(`deployed.json`, written by `tools/deploy.py`) and PostgreSQL as a dependency.
 
 ## Performance and failure handling
 
