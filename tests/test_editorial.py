@@ -46,7 +46,14 @@ class EditorialTests(unittest.TestCase):
     def test_empty_content(self):
         ctx = resource_text(Graph(), str(NODE))
         html = environment().get_template("_resource-content.html.j2").render(**ctx, editorial_iri=str(NODE))
-        self.assertEqual(html.strip(), str(editorial_marker(str(NODE))))
+        marker, link = html.strip().split("\n")
+        self.assertEqual(marker, str(editorial_marker(str(NODE))))
+        # Hidden for visitors; the editor's hint cookie reveals it. Fragment IRIs keep their #.
+        self.assertEqual(link, '<p class="edit-link" hidden><a href="https://id-editorial.linkcite.org/admin'
+                               '?iri=https%3A//id.linkcite.org/patterns/example">Edit</a></p>')
+        fragment = environment().get_template("_resource-content.html.j2").render(
+            **ctx, editorial_iri=BASE + "patterns/vocab#AntiPattern")
+        self.assertIn("?iri=https%3A//id.linkcite.org/patterns/vocab%23AntiPattern", fragment)
 
     def test_editorial_sanitization(self):
         html = str(render_markdown('## Heading\n\n[bad](javascript:alert(1))\n\n'

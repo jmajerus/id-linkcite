@@ -296,6 +296,18 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request("GET", "/api/resources", Host="id-linkcite.majerus.us",
                                       Cf_Access_Jwt_Assertion=token(key=OTHER_KEY))[0].status, 403)
 
+    def test_editor_sets_the_reader_hint_only_on_linkcite_org(self):
+        response, _ = self.request("GET", "/admin", Host="id-editorial.linkcite.org", CF_Ray="abc",
+                                   Cf_Access_Jwt_Assertion=token())
+        self.assertEqual(response.status, 200)
+        cookie = response.getheader("Set-Cookie")
+        self.assertTrue(cookie.startswith("linkcite_editor=1; Domain=linkcite.org;"), cookie)
+        self.assertIn("Secure", cookie)
+        self.assertNotIn("HttpOnly", cookie)  # reader pages read it from script
+        self.assertIsNone(self.request("GET", "/admin")[0].getheader("Set-Cookie"))
+        self.assertIsNone(self.request("GET", "/admin/admin.js", Host="id-editorial.linkcite.org",
+                                       Cf_Access_Jwt_Assertion=token())[0].getheader("Set-Cookie"))
+
     def test_editor_writes_need_same_origin(self):
         body = {"markdown": "*x*"}
         self.assertEqual(self.request("POST", "/api/preview", body, X_LinkCite_Editor="1")[0].status, 403)

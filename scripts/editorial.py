@@ -7,6 +7,10 @@ from markupsafe import Markup
 from rdflib import Literal, URIRef
 from rdflib.namespace import DCTERMS, RDF, RDFS, SKOS
 
+# The editorial service's public hostname (Cloudflare Access). Its /admin page sets the
+# EDITOR_HINT_COOKIE on .linkcite.org, which reader pages check to show their Edit links.
+EDITOR_URL = "https://id-editorial.linkcite.org/admin"
+EDITOR_HINT_COOKIE = "linkcite_editor"
 SEGMENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._~-]*")
 TAGS = {"p", "h2", "h3", "h4", "h5", "h6", "strong", "em", "b", "i", "a",
         "ul", "ol", "li", "blockquote", "pre", "code", "hr", "br",

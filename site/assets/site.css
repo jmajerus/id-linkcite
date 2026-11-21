@@ -88,11 +88,13 @@ ul.patterns { list-style: none; padding: 0; margin: 0 0 1rem; }
 
 .site-footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding: 1rem 0 2rem; color: var(--muted); font-size: 0.9rem; background: var(--surface); }
 .site-footer p { margin: 0.3rem 0; }
+.edit-link { font-size: 0.85rem; margin: 0.25rem 0 1rem; }
+.edit-link a { padding: 0.1rem 0.5rem; border: 1px solid var(--rule); border-radius: 6px; text-decoration: none; }
 .copy { font: inherit; font-size: 0.8rem; padding: 0.1rem 0.5rem; margin-left: 0.3rem; border: 1px solid var(--rule); border-radius: 6px;
   background: var(--bg); color: var(--text); cursor: pointer; }
 
 @media print {
-  .site-header, .contents, .copy { display: none; }
+  .site-header, .contents, .copy, .edit-link { display: none; }
   body { background: #fff; color: #000; }
 }
 

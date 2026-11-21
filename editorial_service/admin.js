@@ -43,6 +43,9 @@ function tab(field) {
 function apply(value) {
   state=value; working={draft_markdown:value.draft_markdown,private_markdown:value.private_markdown};dirty=false;
   $('resource-label').textContent=registry[value.iri]+' — '+value.iri;
+  $('view-page').href=value.iri; $('view-page').hidden=false;
+  // A reload or bookmark reopens this term (history() below is the revision list, not window.history).
+  window.history.replaceState(null,'','?'+new URLSearchParams({iri:value.iri}));
   $('workspace').hidden=false; $('change-note').value='';
   $('publication').textContent=value.published_at?'Published '+value.published_at+(value.published_markdown!==value.draft_markdown?' · unpublished draft changes':''):'Not published';
   tab(active);
@@ -71,7 +74,7 @@ async function change(action) {
   try{
     const value=await api('/api/change',{iri:state.iri,revision_number:state.revision_number,action,...working,
       change_note:$('change-note').value,restore_revision:revision});
-    apply(value);await history();message(action==='publish'?'Published. The next reader request uses it.':action==='restore'?'Draft and notes restored.':action==='unpublish'?'Unpublished.':'Saved.');
+    apply(value);await history();message(action==='publish'?'Published. View page shows it now.':action==='restore'?'Draft and notes restored.':action==='unpublish'?'Unpublished.':'Saved.');
   }catch(e){message(e.message+' Your unsaved text is still here.');}
   finally{busy=false;$('markdown').disabled=false;for(const id of ['save','publish','unpublish'])$(id).disabled=false;$('restore').disabled=!revision;}
 }

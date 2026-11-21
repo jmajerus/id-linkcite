@@ -7,8 +7,8 @@ semantic graph or deploy the site.
 
 ## Editing
 
-Open the editor at http://id-linkcite.localdomain:8000/admin on the LAN, or at
-https://id-linkcite.majerus.us/admin from outside (Cloudflare Access). Search the
+Open the editor at https://id-editorial.linkcite.org/admin (Cloudflare Access), or
+at http://id-linkcite.localdomain:8000/admin on the LAN. Search the
 current public resource registry by label or IRI. Select a resource, then use
 the Public content draft or Private notes tab. Both have Markdown formatting
 controls and a live server-rendered preview. The preview uses the same sanitizer
@@ -25,6 +25,22 @@ as the reader service and suppresses external images and active links for privac
   existing published content until you explicitly publish. No-op saves do not
   generate revisions. Revision notes are optional.
 
+### From a reader page
+
+Each term on a reader page carries an **Edit** link, hidden from visitors, that
+opens the editor on that exact IRI (`/admin?iri=…`). Opening the editor at
+id-editorial.linkcite.org sets a `linkcite_editor` hint cookie on `.linkcite.org`
+(for 400 days), and reader pages on id.linkcite.org show their Edit links when
+it is present. The cookie is not a credential: the links lead to the editor,
+which Access protects. Opening the editor on the LAN hostname cannot set it, so
+visit id-editorial.linkcite.org once in each browser you edit from; delete the
+cookie to hide the links again. In the editor, **View page** opens the term's
+public page, and the address bar keeps the open term, so a reload or bookmark
+returns to it.
+
+An agent needs no search either: a term's IRI is its page's URL, so a page
+address can be passed to `get_content` and `save_draft` as it is.
+
 Markdown supports headings, tables, code, lists, blockquotes, links and images.
 Public images can be linked by URL, including existing /assets/ paths; an image
 upload manager and true rich-text WYSIWYG mode are not part of this first version.
@@ -38,7 +54,7 @@ Reassign or archive retired resources administratively after reviewing identity.
 
 The same service answers MCP at `/mcp`, like the authoring suite's other servers:
 `http://id-linkcite.localdomain:8000/mcp` on the LAN, and
-`https://id-linkcite.majerus.us/mcp` through Cloudflare, where Access and its
+`https://id-editorial.linkcite.org/mcp` through Cloudflare, where Access and its
 Managed OAuth sign the client in. The tools:
 
 | Tool | Does |
@@ -206,11 +222,14 @@ reinstalls each enabled editorial unit from the release it switches to.
 
 Configured in Cloudflare only, as for the suite's other servers:
 
-- **Tunnel route:** public hostname `id-linkcite.majerus.us` →
-  `http://id-linkcite.localdomain:8000`. Never route `id.linkcite.org` here.
-- **Access application** for `id-linkcite.majerus.us`, admitting only the owner,
+- **Tunnel route:** on the same tunnel as `id.linkcite.org` (which stays →
+  `http://id-linkcite.localdomain:7878`, public), add the public hostname
+  `id-editorial.linkcite.org` → `http://id-linkcite.localdomain:8000`. Keeping the
+  editor on its own hostname leaves `/mcp`, `/admin` and `/api` out of the
+  identifier namespace, and lets Access cover the whole hostname.
+- **Access application** for `id-editorial.linkcite.org`, admitting only the owner,
   with Managed OAuth for MCP clients.
-- **MCP server definition:** `https://id-linkcite.majerus.us/mcp`.
+- **MCP server definition:** `https://id-editorial.linkcite.org/mcp`.
 
 The origin checks the assertion's signature, issuer, expiry and subject, not its
 audience, so recreating the Access application needs no change here. The admin
