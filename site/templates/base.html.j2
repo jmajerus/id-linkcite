@@ -46,6 +46,9 @@
     </div>
   </footer>
   <script>
+    // A hint, not a credential: the editor sets it, and the editor itself is behind Cloudflare Access.
+    if (document.cookie.split('; ').includes('linkcite_editor=1'))
+      document.querySelectorAll('.edit-link').forEach(link => { link.hidden = false; });
     document.querySelectorAll('button[data-copy]').forEach(button => button.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(button.dataset.copy); button.textContent = 'Copied'; }
       catch { button.textContent = 'Select and copy'; }

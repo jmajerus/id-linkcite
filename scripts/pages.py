@@ -17,7 +17,7 @@ from markupsafe import Markup
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from editorial import resource_text, reader_resources, generic_context, editorial_marker
+from editorial import resource_text, reader_resources, generic_context, editorial_marker, EDITOR_URL
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = 'https://id.linkcite.org'
@@ -98,6 +98,8 @@ def environment():
     env.filters['md'] = md
     env.filters['mdinline'] = lambda text: md(text, inline=True)
     env.filters['editorial_marker'] = editorial_marker
+    # Reader pages carry a hidden Edit link to the editor; only the editor's browser shows it.
+    env.globals['editor_url'] = EDITOR_URL
     return env
 
 

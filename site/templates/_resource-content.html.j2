@@ -8,3 +8,4 @@
 {% endif %}
 {% endfor %}
 {{ editorial_iri | editorial_marker }}
+<p class="edit-link" hidden><a href="{{ editor_url }}?iri={{ editorial_iri | urlencode }}">Edit</a></p>

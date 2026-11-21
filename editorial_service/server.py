@@ -25,8 +25,8 @@ from psycopg_pool import ConnectionPool
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
-from editorial import render_markdown
-from access import Access, AccessError
+from editorial import render_markdown, EDITOR_HINT_COOKIE
+from access import Access, AccessError, request_host
 import mcp_tools
 
 LOG = logging.getLogger("linkcite-editorial")
@@ -85,6 +85,13 @@ def health(pool, admin_url):
     if deployed.exists():
         value["deployed"] = json.loads(deployed.read_text(encoding="utf-8"))
     return value
+
+
+def request_host_name(headers):
+    try:
+        return request_host(headers.get("Host"))
+    except AccessError:
+        return ""
 
 
 def actor_for(identity, lan_actor, channel=None):
@@ -298,7 +305,13 @@ class Handler(BaseHTTPRequestHandler):
                       "/admin/admin.css": ("admin.css", "text/css; charset=utf-8")}
             if url.path in assets:
                 name, mime = assets[url.path]
-                self.send_bytes(200, (Path(__file__).parent / name).read_bytes(), mime)
+                extra = {}
+                if name == "admin.html" and request_host_name(self.headers).endswith(".linkcite.org"):
+                    # Tells reader pages on id.linkcite.org to show their Edit links. Not a
+                    # credential: the links lead here, behind Cloudflare Access.
+                    extra["Set-Cookie"] = (f"{EDITOR_HINT_COOKIE}=1; Domain=linkcite.org; Path=/; "
+                                           "Max-Age=34560000; Secure; SameSite=Lax")
+                self.send_bytes(200, (Path(__file__).parent / name).read_bytes(), mime, extra)
                 return
             if url.path == "/api/resources":
                 self.json(200, resources())
