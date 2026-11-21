@@ -190,6 +190,14 @@ LINKCITE_EDITORIAL_USER="editor"
 ACCESS_TEAM_DOMAIN="https://REPLACE.cloudflareaccess.com"
 ```
 
+Or keep these settings in the workstation's `.env` (Git ignores it) and run
+`python3 tools/deploy.py --env`. It replaces only the keys in this list that are set
+in `.env` — `LINKCITE_EDITORIAL_READER_DSN`, `LINKCITE_EDITORIAL_EDITOR_DSN`,
+`LINKCITE_EDITORIAL_USER`, `LINKCITE_LAN_HOSTS` and `ACCESS_TEAM_DOMAIN` — keeps the
+file's other lines, writes it root-only (0600) with the values passed over SSH
+stdin, and restarts the enabled editorial units. A normal deploy never copies `.env`;
+`AUTHORING_DATABASE_URL` is never copied.
+
 `LINKCITE_EDITORIAL_USER` is the name LAN edits are recorded under. Releases
 before the MCP service also required `LINKCITE_EDITORIAL_PASSWORD`; it is now
 ignored and can be removed once you no longer need to roll back to one.

@@ -48,7 +48,7 @@ Definitions, scope notes and descriptions are now included by default; the old `
 2. `python3 scripts/build.py` writes `build/public.nq`, `build/manifest.json` and the home page, and prints what each vocabulary contributes.
 3. `python3 tools/deploy.py` copies the release to the LXC and runs `deploy/install.sh` there. It switches only once the new release answers, and otherwise restores the previous one.
 
-`python3 tools/deploy.py --inspect` shows the server's state without changing it. The host is `root@id-linkcite.localdomain` (SSH key), or `ID_LINKCITE_HOST`.
+`python3 tools/deploy.py --inspect` shows the server's state without changing it. `python3 tools/deploy.py --env` copies the editorial services' settings (DSNs, `ACCESS_TEAM_DOMAIN`, …) from `.env` to the server's `/etc/linkcite/editorial.env` and restarts them; a normal deploy never copies `.env`. The host is `root@id-linkcite.localdomain` (SSH key), or `ID_LINKCITE_HOST`.
 
 Set up once: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`, and `npm install` to run it locally.
 
