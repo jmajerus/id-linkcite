@@ -296,7 +296,8 @@ def handle(message, ctx_factory, server_info, problem_type):
     if method == "tools/list":
         return _result(id_, {"tools": TOOLS})
     if method == "tools/call":
-        if params.get("name") not in TOOL_NAMES:
-            return _error(id_, -32602, f"Unknown tool: {params.get('name')!r}.")
+        name = params.get("name")
+        if not isinstance(name, str) or name not in TOOL_NAMES:
+            return _error(id_, -32602, f"Unknown tool: {name!r}."[:300])
         return _result(id_, call_tool(ctx_factory(), params, problem_type))
     return _error(id_, -32601, f"Method not found: {method}.")

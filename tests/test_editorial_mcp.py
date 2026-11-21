@@ -81,7 +81,8 @@ class AccessTests(unittest.TestCase):
 
     def test_unconfigured_or_malformed(self):
         for domain in (None, "", "http://team.cloudflareaccess.com", "https://team.cloudflareaccess.com/path",
-                       "https://user@team.cloudflareaccess.com"):
+                       "https://user@team.cloudflareaccess.com", "https://[team.cloudflareaccess.com",
+                       "https://team.cloudflareaccess.com:notaport"):
             access = Access(domain, [], keys=lambda _: KEY.public_key())
             with self.assertRaises(AccessError) as ctx:
                 access.authorize(headers(Host="x.majerus.us", Cf_Access_Jwt_Assertion=token()), "10.0.0.2")
@@ -157,6 +158,8 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(names, {"search_resources", "get_content", "list_revisions", "get_revision",
                                  "preview_markdown", "save_draft"})
         self.assertEqual(rpc("tools/call", {"name": "publish", "arguments": {}})["error"]["code"], -32602)
+        for name in (["save_draft"], {"x": 1}, None, 5):
+            self.assertEqual(rpc("tools/call", {"name": name, "arguments": {}})["error"]["code"], -32602, name)
 
     def test_notifications_and_errors(self):
         self.assertIsNone(rpc("notifications/initialized", id_=None))

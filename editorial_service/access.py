@@ -58,9 +58,16 @@ class Access:
         self.lan_hosts = {h.strip().lower() for h in lan_hosts if h.strip()}
         self.issuer = None
         if team_domain:
-            url = urlsplit(team_domain.strip())
-            if (url.scheme == "https" and url.hostname and not url.username and not url.password
-                    and url.path in ("", "/") and not url.query and not url.fragment):
+            # A malformed value leaves the issuer unset: LAN access still works, and
+            # requests through Cloudflare are refused (503) until it is corrected.
+            try:
+                url = urlsplit(team_domain.strip())
+                valid = (url.scheme == "https" and url.hostname and not url.username and not url.password
+                         and url.path in ("", "/") and not url.query and not url.fragment)
+                url.port  # raises ValueError for a bad port
+            except ValueError:
+                valid = False
+            if valid:
                 self.issuer = f"https://{url.netloc}"
         self._keys = keys  # a callable token -> key, for tests
         self._client = None
