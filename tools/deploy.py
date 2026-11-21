@@ -48,6 +48,11 @@ MERGE_ENV = r'''
 import json, os, re, subprocess, sys
 path = '/etc/linkcite/editorial.env'
 values = json.load(sys.stdin)
+legacy = [f for f in ('/etc/linkcite/editorial-public.env', '/etc/linkcite/editorial-admin.env') if os.path.exists(f)]
+if not os.path.exists(path) and legacy:
+    # install.sh builds editorial.env from these only while it is absent; creating it here would skip that.
+    sys.exit('Not changed: ' + path + ' does not exist yet, but ' + ' and '.join(legacy) +
+             ' do. Run a normal deploy first (it migrates them), then --env.')
 lines = open(path).read().splitlines() if os.path.exists(path) else []
 quote = lambda v: '"' + v.replace('\\', '\\\\').replace('"', '\\"') + '"'
 kept = [l for l in lines if not re.match(r'\s*(%s)=' % '|'.join(map(re.escape, values)), l)]
@@ -89,7 +94,10 @@ def push_env():
     if any('\n' in v or '\r' in v for v in values.values()):
         sys.exit('A setting in .env contains a line break.')
     print(f"Setting {', '.join(values)} in /etc/linkcite/editorial.env on {HOST}", flush=True)
-    ssh('python3 -c ' + shlex.quote(MERGE_ENV), data=json.dumps(values).encode())
+    try:
+        ssh('python3 -c ' + shlex.quote(MERGE_ENV), data=json.dumps(values).encode())
+    except subprocess.CalledProcessError:
+        sys.exit(1)  # the server has said why
 
 
 def ssh(command, data=None):
