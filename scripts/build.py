@@ -65,7 +65,9 @@ def works(manifest, config):
     base = manifest['base']
     result = []
     for work in config.get('works', []):
+        # 'short' names a vocabulary within its work ("Patterns"), from the last segment of its path.
         vocabularies = [{'href': '/' + v['home'][len(base):], 'title': v['title'], 'iri': base + v['path'],
+                         'short': v['path'].rsplit('/', 1)[-1].replace('-', ' ').capitalize(),
                          'resources': v['resources']}
                         for v in manifest['vocabularies'] if v['path'].startswith(work['path'] + '/')]
         if vocabularies:
@@ -74,14 +76,15 @@ def works(manifest, config):
 
 
 def welcome(works):
-    """The home page: general, with one link per work; each work's page lists its vocabularies.
-    Links are relative, so they work locally too."""
+    """The home page: general, with a card per work and shortcuts to its vocabularies; each work's page
+    lists them in full. Links are relative, so they work locally too."""
     e = html.escape
     cards = ''.join(
         f'''
     <li class="trifid-card">
       <h3><a href="{e(w['href'])}">{e(w['title'])}</a></h3>
       <p>{e(w['description'])}</p>
+      <p>{' · '.join(f'<a href="{e(v["href"])}">{e(v["short"])}</a>' for v in w['vocabularies'])}</p>
     </li>''' for w in works)
     # Trifid's grid lets cards shrink to 250px, too narrow for the cards' text.
     return f'''<style>
