@@ -12,6 +12,7 @@ prints what differs from the live release before deploying: the whole site is de
 vocabulary sources go live too.
 """
 import argparse
+import fcntl
 import json
 import subprocess
 import sys
@@ -66,8 +67,11 @@ def live_manifest():
 def differences(live, new):
     """What the new build changes, in words; empty if it matches the live release."""
     changes = []
-    if live.get('site', {}).get('commit') != new['site']['commit']:
-        changes.append(f"site code: {str(live.get('site', {}).get('commit'))[:7]} -> {new['site']['commit'][:7]}")
+    # The whole site state: a release deployed with --allow-stale has the same commit plus uncommitted changes.
+    old_site, new_site = live.get('site', {}), new['site']
+    if old_site != new_site:
+        mark = lambda site: str(site.get('commit'))[:7] + (' with uncommitted changes' if site.get('changes') else '')
+        changes.append(f'site code: {mark(old_site)} -> {mark(new_site)}')
     old_texts = {t['href']: t for t in live.get('texts', [])}
     new_texts = {t['href']: t for t in new.get('texts', [])}
     for href in sorted(old_texts.keys() | new_texts.keys()):
@@ -96,6 +100,13 @@ def main():
     args = parser.parse_args()
     sys.stdout.reconfigure(line_buffering=True)  # keep this output in order with the build steps
 
+    # One publish at a time on this machine: a second would compare against a release the first replaces.
+    lock = open(ROOT / '.publish.lock', 'w')
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit('Not published: another publish is running.')
+
     check_checkout()
     check_texts(json.loads((ROOT / 'vocabularies.json').read_text()))
     live = live_manifest()
@@ -115,6 +126,10 @@ def main():
     if not changes and not args.force:
         print('Nothing to deploy.')
         return
+    # The build takes a while: if another release went live meanwhile, this build was compared against the
+    # wrong one and could roll it back. Deploying from elsewhere still bypasses this; publish from one place.
+    if live_manifest() != live:
+        sys.exit('Not published: the live release changed during the build. Run publish again.')
     subprocess.run([sys.executable, 'tools/deploy.py'], cwd=ROOT, check=True)
 
 
