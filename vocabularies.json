@@ -17,7 +17,7 @@
         "../dehumanization-patterns/patterns-catalog.ttl",
         "../dehumanization-patterns/build/dehumanization-patterns.ttl"
       ],
-      "build": "Run python scripts/build_terminology_scheme.py in dehumanization-patterns."
+      "build": "Run npm run build:sources (python scripts/build_terminology_scheme.py in dehumanization-patterns)."
     },
     {
       "path": "dehumanization/frameworks",

@@ -46,8 +46,10 @@ Definitions, scope notes and descriptions are now included by default; the old `
 
 ## Updating
 
-1. Regenerate a vocabulary's projection in its own repository, if it changed (each entry in `vocabularies.json` says how).
-2. `python3 scripts/build.py` writes `build/public.nq`, `build/manifest.json` and the home page, and prints what each vocabulary contributes.
+`npm run build` does steps 1 and 2 in order; each also runs on its own.
+
+1. `npm run build:sources` regenerates the vocabularies' projections in their own repositories (each entry in `vocabularies.json` says how). It runs the patterns projection; the frameworks are a committed release and need no step. A new vocabulary with a generated source adds its command here.
+2. `npm run build:site` (`scripts/build.py`) writes `build/public.nq`, `build/manifest.json`, the home page and the reader pages, and prints what each vocabulary contributes.
 3. `python3 tools/deploy.py` copies the release to the LXC and runs `deploy/install.sh` there. It switches only once the new release answers, and otherwise restores the previous one.
 
 `python3 tools/deploy.py --inspect` shows the server's state without changing it. `python3 tools/deploy.py --env` copies the editorial services' settings (DSNs, `ACCESS_TEAM_DOMAIN`, …) from `.env` to the server's `/etc/linkcite/editorial.env` and restarts them; a normal deploy never copies `.env`. The host is `root@id-linkcite.localdomain` (SSH key), or `ID_LINKCITE_HOST`.
