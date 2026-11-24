@@ -1,4 +1,4 @@
-# Text for the Dehumanization Frameworks pages (https://id.linkcite.org/frameworks/...).
+# Text for the Dehumanization Frameworks pages (https://id.linkcite.org/dehumanization/frameworks/...).
 # Paragraphs are separated by blank lines. Everything else on the pages comes from the data.
 
 title = "Dehumanization Frameworks"
@@ -21,7 +21,7 @@ The frameworks are diagnostic tools, not moral verdicts or predictions. They ask
 not who is to blame. They are meant to be applied selectively, combined, or set aside; sometimes declining to
 apply one is the more responsible choice.
 
-The [Dehumanization Patterns](/patterns/scheme) catalog names the recurring forms these pathways take in practice.
+The [Dehumanization Patterns](/dehumanization/patterns/scheme) catalog names the recurring forms these pathways take in practice.
 """
 
 # The overview's arrangement, after the book's own orientation. Frameworks are named by code.

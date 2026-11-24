@@ -1,0 +1,22 @@
+{% extends 'base.html.j2' %}
+{# A work's page: its vocabularies as cards. Navigation only; the work itself is not an identified resource. #}
+{% block title %}{{ work.title }}{% endblock %}
+{% block main %}
+<div class="hero">
+  <h1>{{ work.title }}</h1>
+  <p class="tagline">{{ work.description }}</p>
+</div>
+
+<section class="part">
+  <h2 class="part-title">Vocabularies</h2>
+  <ul class="cards">
+    {% for v in work.vocabularies %}
+    <li class="card">
+      <a href="{{ v.href }}">{{ v.title }}</a>
+      <p><code class="iri-prefix">{{ v.iri }}/</code></p>
+      <p class="tally">{{ v.resources }} resources</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

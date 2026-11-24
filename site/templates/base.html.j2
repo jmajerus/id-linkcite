@@ -6,9 +6,11 @@
   {# Indexing policy is independent of publishing definitions; links can still be followed. #}
   <meta name="robots" content="noindex">
   <title>{% block title %}{% endblock %} · id.linkcite.org</title>
+  {% if iri %}
   <link rel="canonical" href="{{ iri }}">
   <link rel="alternate" type="text/turtle" href="?format=ttl">
   <link rel="alternate" type="application/ld+json" href="?format=jsonld">
+  {% endif %}
   <link rel="stylesheet" href="/assets/site.css">
   <link rel="icon" href="/assets/favicon.ico" sizes="32x32">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -18,6 +20,7 @@
   <header class="site-header">
     <div class="wrap">
       <a class="site-name" href="/">id.linkcite.org</a>
+      {% if work %}<span class="crumb">/ <a href="{{ work.href }}">{{ work.label }}</a></span> {% endif %}
       {% block crumbs %}{% endblock %}
     </div>
   </header>
@@ -38,10 +41,12 @@
   </main>
   <footer class="site-footer">
     <div class="wrap">
+      {% if iri %}
       <p class="iri">Identifier: <code>{{ iri }}</code>
         <button type="button" class="copy" data-copy="{{ iri }}">Copy</button></p>
       <p>As data: <a href="?format=ttl">Turtle</a> · <a href="?format=jsonld">JSON-LD</a> · <a href="?format=nt">N-Triples</a>
         · <a href="/sparql/">SPARQL</a></p>
+      {% endif %}
       <p>Data <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="license">CC BY-NC 4.0</a>.</p>
     </div>
   </footer>

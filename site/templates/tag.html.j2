@@ -1,7 +1,7 @@
 {% extends 'base.html.j2' %}
 {% from '_macros.html.j2' import pattern_list %}
 {% block title %}{{ tag.name }}{% endblock %}
-{% block crumbs %}<span class="crumb">/ <a href="/patterns/scheme">{{ content.title }}</a> / <a href="{{ vocabulary.href }}">{{ vocabulary.title }}</a>{% if broader %} / <a href="{{ broader.href }}">{{ broader.name }}</a>{% endif %}</span>{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="{{ patterns_home }}">{{ content.title }}</a> / <a href="{{ vocabulary.href }}">{{ vocabulary.title }}</a>{% if broader %} / <a href="{{ broader.href }}">{{ broader.name }}</a>{% endif %}</span>{% endblock %}
 {% block main %}
 <div class="hero">
   <p class="kind"><span class="badge cluster">{{ vocabulary.singular }}</span></p>

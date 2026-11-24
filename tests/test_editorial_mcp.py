@@ -21,8 +21,8 @@ from access import Access, AccessError, private_peer
 ISSUER = "https://team.cloudflareaccess.com"
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-IRI = "https://id.linkcite.org/patterns/example"
-REGISTRY = {IRI: "Example pattern", "https://id.linkcite.org/patterns/other": "Other"}
+IRI = "https://id.linkcite.org/dehumanization/patterns/example"
+REGISTRY = {IRI: "Example pattern", "https://id.linkcite.org/dehumanization/patterns/other": "Other"}
 
 
 def token(key=KEY, **claims):
@@ -199,7 +199,7 @@ class ToolTests(unittest.TestCase):
         self.assertIn("Someone changed", result["content"][0]["text"])
 
     def test_unknown_iri_and_bad_arguments(self):
-        for args in ({"iri": "https://id.linkcite.org/patterns/missing"}, {"iri": 5}, {}):
+        for args in ({"iri": "https://id.linkcite.org/dehumanization/patterns/missing"}, {"iri": 5}, {}):
             self.assertTrue(call("get_content", **args)["isError"])
         self.assertTrue(call("get_content", iri=IRI, include_private_notes="yes")["isError"])
         self.assertTrue(call("save_draft", iri=IRI, revision_number="3", draft_markdown="x")["isError"])

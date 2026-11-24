@@ -2,13 +2,15 @@
 
 Persistent identifiers for terms (provisional until formal publication at version 1.0 or later). Each IRI under `https://id.linkcite.org/` resolves to the term's public description: an HTML page in a browser, or Turtle, JSON-LD or N-Triples by content negotiation. A read-only SPARQL endpoint answers at `/query`, with an editor at `/sparql/`.
 
-The vocabularies themselves live in their own repositories, which stay the source of truth. This repository only collects a public view of each one and serves it.
+The vocabularies themselves live in their own repositories, which stay the source of truth. This repository only collects a public view of each one and serves it. Vocabularies are grouped by the work they come from: the front page lists the works, and each work's page (such as `/dehumanization`) lists its vocabularies.
 
 | Path | Vocabulary | Source |
 |---|---|---|
-| `/patterns` | Dehumanization Patterns | `dehumanization-patterns` (the ontology and its SKOS projection) |
-| `/frameworks` | Dehumanization Frameworks | `dehumanization-frameworks` (committed `dehumanization-frameworks.ttl`; derived from the manuscript) |
+| `/dehumanization/patterns` | Dehumanization Patterns | `dehumanization-patterns` (the ontology and its SKOS projection) |
+| `/dehumanization/frameworks` | Dehumanization Frameworks | `dehumanization-frameworks` (committed `dehumanization-frameworks.ttl`; derived from the manuscript) |
 | `/index` | Concept Index (draft, not yet published) | `terminology-mcp/tmp/concept-index` |
+
+Until November 2026 the patterns and frameworks were at `/patterns` and `/frameworks`. Those addresses redirect permanently (`trifid/plugins/redirects.js`, configured in `trifid/config.yaml`), and `sql/002-dehumanization-namespace.sql` moved their editorial content.
 
 ## How it runs
 
@@ -25,8 +27,8 @@ Browsers get pages written for people, where one exists; tools asking for Turtle
 
 They cover both published vocabularies:
 
-- **Patterns:** the overview (`/patterns/scheme`), a page for each pattern and cluster, and the tags patterns use (settings, what patterns do, what works against them), each with its patterns. Text in `site/content/patterns.toml`.
-- **Frameworks:** the overview (`/frameworks/scheme`), arranged as the book orients them (DF0, the distortion and magnification planes, then DF5 and DF6), a page for each framework with its terms by role, and a page for each term. Text in `site/content/frameworks.toml`.
+- **Patterns:** the overview (`/dehumanization/patterns/scheme`), a page for each pattern and cluster, and the tags patterns use (settings, what patterns do, what works against them), each with its patterns. Text in `site/content/patterns.toml`.
+- **Frameworks:** the overview (`/dehumanization/frameworks/scheme`), arranged as the book orients them (DF0, the distortion and magnification planes, then DF5 and DF6), a page for each framework with its terms by role, and a page for each term. Text in `site/content/frameworks.toml`.
 
 Edit the text files, then build and deploy. RDF definitions, descriptions, comments and scope notes are shown where available; optional per-IRI Markdown from PostgreSQL is inserted after canonical prose at request time. See [editorial instructions](site/content/EDITORIAL.md). Reader shells are generated for all supported public resource IRIs, including hash fragments.
 
@@ -60,16 +62,16 @@ oxigraph serve-read-only --location /tmp/id-store --bind 127.0.0.1:7879 --union-
 npm start
 ```
 
-Then open <http://localhost:7878/patterns/scheme>. Trifid rewrites `https://id.linkcite.org/` to the local address, so links stay local.
+Then open <http://localhost:7878/dehumanization/patterns/scheme>. Trifid rewrites `https://id.linkcite.org/` to the local address, so links stay local.
 
 ## Adding a vocabulary
 
-Add an entry to `vocabularies.json`: its `path` (the first segment under the root, which must not already be in use), a `title`, its `home` IRI, its `sources`, and how to rebuild them. Every subject in its sources must already be under `https://id.linkcite.org/<path>`.
+Add an entry to `vocabularies.json`: its `path` (`<work>/<vocabulary>`, which must not already be in use), a `title`, its `home` IRI, its `sources`, and how to rebuild them. Every subject in its sources must already be under `https://id.linkcite.org/<path>`. A vocabulary for a new work also needs the work in `works`: its `path` (one segment), a short `label` for page headers, a `title` and a `description`. The work's page and its card on the front page are generated from these.
 
 ## Rules for IRIs
 
 - IRIs in pre-1.0 ontologies are provisional and may be revised, consolidated or retired. Once an IRI is included in a formally published ontology release at version 1.0 or later, preserve that identifier permanently, even if its label changes or the resource is deprecated. Never put a version in an entity IRI.
-- Terms take slash paths (`/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/patterns/vocab#AntiPattern`).
+- Terms take slash paths (`/dehumanization/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/dehumanization/patterns/vocab#AntiPattern`).
 - The published vocabulary includes its available definitions; full manuscript text stays private. Reader pages retain `noindex` until a separate decision is made about search-engine indexing.
 
 ## Licensing

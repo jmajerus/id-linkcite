@@ -25,7 +25,7 @@ Private notes are the editor's own and may contain unpublished manuscript text; 
 and never copy them into a public draft. Do not put manuscript passages in a draft unless they are meant \
 to be published."""
 
-IRI_PROP = {"type": "string", "description": "The term's exact public IRI, e.g. https://id.linkcite.org/patterns/sacralization-of-procedure"}
+IRI_PROP = {"type": "string", "description": "The term's exact public IRI, e.g. https://id.linkcite.org/dehumanization/patterns/sacralization-of-procedure"}
 READ_ONLY = {"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 
 TOOLS = [

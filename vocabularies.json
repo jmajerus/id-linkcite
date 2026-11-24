@@ -1,10 +1,18 @@
 {
   "base": "https://id.linkcite.org/",
+  "works": [
+    {
+      "path": "dehumanization",
+      "label": "Dehumanization",
+      "title": "The Struggle Against Dehumanization",
+      "description": "The frameworks and patterns of the book: the pathways by which people come to be treated as less than people, and the recurring forms those pathways take in practice."
+    }
+  ],
   "vocabularies": [
     {
-      "path": "patterns",
+      "path": "dehumanization/patterns",
       "title": "Dehumanization Patterns",
-      "home": "https://id.linkcite.org/patterns/scheme",
+      "home": "https://id.linkcite.org/dehumanization/patterns/scheme",
       "sources": [
         "../dehumanization-patterns/patterns-catalog.ttl",
         "../dehumanization-patterns/build/dehumanization-patterns.ttl"
@@ -12,9 +20,9 @@
       "build": "Run python scripts/build_terminology_scheme.py in dehumanization-patterns."
     },
     {
-      "path": "frameworks",
+      "path": "dehumanization/frameworks",
       "title": "Dehumanization Frameworks",
-      "home": "https://id.linkcite.org/frameworks/scheme",
+      "home": "https://id.linkcite.org/dehumanization/frameworks/scheme",
       "sources": [
         "../dehumanization-frameworks/dehumanization-frameworks.ttl"
       ],
