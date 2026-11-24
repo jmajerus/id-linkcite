@@ -14,7 +14,8 @@
     "build:site": ".venv/bin/python scripts/build.py",
     "test": ".venv/bin/python -m unittest discover -s tests && node --check trifid/plugins/pages.js && node --check trifid/plugins/redirects.js && node --check editorial_service/admin.js",
     "start": "trifid --config trifid/config.yaml",
-    "deploy": "python3 tools/deploy.py"
+    "deploy": "python3 tools/deploy.py",
+    "publish": "python3 tools/publish.py"
   },
   "dependencies": {
     "mimeparse": "0.1.4",

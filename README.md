@@ -52,6 +52,8 @@ Definitions, scope notes and descriptions are now included by default; the old `
 2. `npm run build:site` (`scripts/build.py`) writes `build/public.nq`, `build/manifest.json`, the home page and the reader pages, and prints what each vocabulary contributes.
 3. `python3 tools/deploy.py` copies the release to the LXC and runs `deploy/install.sh` there. It switches only once the new release answers, and otherwise restores the previous one.
 
+`npm run publish` (`tools/publish.py`) does all three, but only from a clean checkout of `main`, and only deploys if the build differs from the live release: site code, a published text, or a vocabulary's sources. It first checks that each published text is a readable PDF and warns if one has no licence notice in its first pages. Before deploying it lists what changed; the whole site is deployed, so changed vocabulary sources go live along with a new annex. `--dry-run` builds and compares without deploying; `--force` deploys anyway.
+
 `python3 tools/deploy.py --inspect` shows the server's state without changing it. `python3 tools/deploy.py --env` copies the editorial services' settings (DSNs, `ACCESS_TEAM_DOMAIN`, …) from `.env` to the server's `/etc/linkcite/editorial.env` and restarts them; a normal deploy never copies `.env`. The host is `root@id-linkcite.localdomain` (SSH key), or `ID_LINKCITE_HOST`.
 
 Set up once: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`, and `npm install` to run it locally.
@@ -69,6 +71,8 @@ Then open <http://localhost:7878/dehumanization/patterns/scheme>. Trifid rewrite
 ## Published texts
 
 A work's `texts` in `vocabularies.json` lists documents published under it: each one's `source` (a file built in the manuscript repository), the `file` name it is served under at `/<work>/text/`, a `title` and a `description`; `text_license` applies to all of them. `npm run build:site` copies them into `build/text/<work>/` and records each one's fingerprint, so a rebuilt PDF makes the build stale until the site is rebuilt. The work's page lists them under "Read the annexes". Annexes 1 and 2 are published under CC BY-NC 4.0; Trifid serves `build/text/dehumanization/` (`trifid/config.yaml`), and a second work would need its own entry there.
+
+In the manuscript repository, the VS Code tasks "Build Annex 1 + publish" and "Build Annex 2 + publish" build that annex's PDF (the `annex1` or `annex2` profile, `pdf-screen`) and then run `npm run publish` here. A failed build stops before publishing. "Publish annexes to id.linkcite.org" runs the publish step alone. Building an annex without publishing ("Build Annex N PDF", or any other build task) leaves the live site as it is.
 
 ## Adding a vocabulary
 
