@@ -69,7 +69,12 @@ def welcome(manifest):
       <h3><a href="/{html.escape(v['home'][len(base):])}">{html.escape(v['title'])}</a></h3>
       <p><code>{html.escape(base + v['path'])}/</code> · {v['resources']} resources</p>
     </li>''' for v in manifest['vocabularies'])
-    return f'''<div class="trifid-header-title">
+    # Trifid's grid lets cards shrink to 250px, too narrow for a monospace vocabulary IRI.
+    return f'''<style>
+  .trifid-card-grid {{ grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }}
+  .trifid-card code {{ overflow-wrap: anywhere; }}
+</style>
+<div class="trifid-header-title">
   <div class="trifid-content">
     <div class="container">
       <h1>id.linkcite.org</h1>
