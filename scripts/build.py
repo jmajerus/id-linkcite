@@ -74,29 +74,26 @@ def works(manifest, config):
 
 
 def welcome(works):
-    """The home page: one card per work, with its vocabularies. Links are relative, so they work locally too."""
+    """The home page: general, with one link per work; each work's page lists its vocabularies.
+    Links are relative, so they work locally too."""
     e = html.escape
     cards = ''.join(
         f'''
     <li class="trifid-card">
       <h3><a href="{e(w['href'])}">{e(w['title'])}</a></h3>
       <p>{e(w['description'])}</p>
-      <ul>{''.join(f"""
-        <li><a href="{e(v['href'])}">{e(v['title'])}</a> · {v['resources']} resources</li>""" for v in w['vocabularies'])}
-      </ul>
     </li>''' for w in works)
     # Trifid's grid lets cards shrink to 250px, too narrow for the cards' text.
     return f'''<style>
   .trifid-card-grid {{ grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }}
-  .trifid-card ul {{ margin: 0; padding-left: 1.2rem; }}
 </style>
 <div class="trifid-header-title">
   <div class="trifid-content">
     <div class="container">
       <h1>id.linkcite.org</h1>
-      <p>Persistent identifiers for the terms of <cite>The Struggle Against Dehumanization</cite> and related
-      vocabularies, grouped by the work they come from. Identifiers are provisional during pre-1.0 development and
-      become permanent when included in a formally published ontology release at version 1.0 or later.</p>
+      <p>Persistent identifiers for the terms of published vocabularies, grouped by the work they come from.
+      Identifiers are provisional during pre-1.0 development and become permanent when included in a formally
+      published ontology release at version 1.0 or later.</p>
       <p>Each IRI resolves here to its available definitions, codes and links: as a page in a browser, or as Turtle,
       JSON-LD or N-Triples by content negotiation. Reader pages may also include editorial commentary.</p>
     </div>
@@ -107,6 +104,7 @@ def welcome(works):
   <h2>Works</h2>
   <ul class="trifid-card-grid">{cards}
   </ul>
+  <p>Additional vocabularies will be added here.</p>
 
   <h2>Query</h2>
   <ul class="trifid-link-list">
