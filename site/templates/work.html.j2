@@ -19,4 +19,19 @@
     {% endfor %}
   </ul>
 </section>
+
+{% if work.texts %}
+<section class="part" id="texts">
+  <h2 class="part-title">Read the annexes</h2>
+  <ul class="texts">
+    {% for t in work.texts %}
+    <li>
+      <a href="{{ t.href }}">{{ t.title }}</a> <span class="tally">PDF, {{ '%.1f' | format(t.bytes / 1048576) }} MB, built {{ t.built }}</span>
+      <p>{{ t.description }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if work.text_license %}<p class="fine">Prepublication drafts. Text licensed under <a href="{{ work.text_license.url }}" rel="license">{{ work.text_license.name }}</a>.</p>{% endif %}
+</section>
+{% endif %}
 {% endblock %}

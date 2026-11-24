@@ -132,6 +132,10 @@ ul.cards { list-style: none; padding: 0; margin: 0.5rem 0 0; display: grid; gap:
 .card { border: 1px solid var(--rule); border-radius: 10px; padding: 0.8rem 1rem; background: var(--surface); }
 .card > a { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; text-decoration: none; }
 .card p { margin: 0.3rem 0 0; }
+ul.texts { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+ul.texts li { margin: 0 0 0.9rem; }
+ul.texts li > a { font-weight: 600; }
+ul.texts p { margin: 0.2rem 0 0; }
 .card .iri-prefix { font-size: 0.85rem; overflow-wrap: anywhere; }
 .tally { color: var(--muted); font-size: 0.85rem; }
 .code { font: 600 0.8rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); margin-right: 0.35rem; white-space: nowrap; }

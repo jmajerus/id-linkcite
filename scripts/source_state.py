@@ -46,6 +46,11 @@ def stale_reasons(root, manifest):
                 state = ('was not fingerprinted by the build' if recorded is None else
                          'is missing' if actual is None else 'has changed since the build')
                 reasons.append(f"{source['file']} {state}")
+    for text in manifest.get('texts', []):
+        path = (root / text['file']).resolve()
+        actual = file_digest(path) if path.is_file() else None
+        if actual != text.get('sha256'):
+            reasons.append(f"{text['file']} {'is missing' if actual is None else 'has changed since the build'}")
     return reasons
 
 
