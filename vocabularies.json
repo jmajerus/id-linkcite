@@ -5,7 +5,25 @@
       "path": "dehumanization",
       "label": "Dehumanization",
       "title": "The Struggle Against Dehumanization",
-      "description": "The frameworks and patterns of the book: the pathways by which people come to be treated as less than people, and the recurring forms those pathways take in practice."
+      "description": "The frameworks and patterns of the book: the pathways by which people come to be treated as less than people, and the recurring forms those pathways take in practice.",
+      "texts": [
+        {
+          "file": "annex-1.pdf",
+          "title": "Annex 1: Dehumanization Frameworks and Applied Diagnostics",
+          "description": "The frameworks DF0–DF6, with templates and constraints for responsible analysis.",
+          "source": "../struggle-against-dehumanization/build/annexes/Dehumanization-Frameworks.pdf"
+        },
+        {
+          "file": "annex-2.pdf",
+          "title": "Annex 2: Dehumanization Patterns Catalogue",
+          "description": "The anti-patterns and restorative patterns, with their tags and countermeasures.",
+          "source": "../struggle-against-dehumanization/build/annexes/Dehumanization-Patterns-Catalogue.pdf"
+        }
+      ],
+      "text_license": {
+        "name": "CC BY-NC 4.0",
+        "url": "https://creativecommons.org/licenses/by-nc/4.0/"
+      }
     }
   ],
   "vocabularies": [

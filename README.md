@@ -66,6 +66,10 @@ npm start
 
 Then open <http://localhost:7878/dehumanization/patterns/scheme>. Trifid rewrites `https://id.linkcite.org/` to the local address, so links stay local.
 
+## Published texts
+
+A work's `texts` in `vocabularies.json` lists documents published under it: each one's `source` (a file built in the manuscript repository), the `file` name it is served under at `/<work>/text/`, a `title` and a `description`; `text_license` applies to all of them. `npm run build:site` copies them into `build/text/<work>/` and records each one's fingerprint, so a rebuilt PDF makes the build stale until the site is rebuilt. The work's page lists them under "Read the annexes". Annexes 1 and 2 are published under CC BY-NC 4.0; Trifid serves `build/text/dehumanization/` (`trifid/config.yaml`), and a second work would need its own entry there.
+
 ## Adding a vocabulary
 
 Add an entry to `vocabularies.json`: its `path` (`<work>/<vocabulary>`, which must not already be in use), a `title`, its `home` IRI, its `sources`, and how to rebuild them. Every subject in its sources must already be under `https://id.linkcite.org/<path>`. A vocabulary for a new work also needs the work in `works`: its `path` (one segment), a short `label` for page headers, a `title` and a `description`. The work's page and its card on the front page are generated from these.
@@ -74,8 +78,8 @@ Add an entry to `vocabularies.json`: its `path` (`<work>/<vocabulary>`, which mu
 
 - IRIs in pre-1.0 ontologies are provisional and may be revised, consolidated or retired. Once an IRI is included in a formally published ontology release at version 1.0 or later, preserve that identifier permanently, even if its label changes or the resource is deprecated. Never put a version in an entity IRI.
 - Terms take slash paths (`/dehumanization/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/dehumanization/patterns/vocab#AntiPattern`).
-- `/dehumanization/text/` is reserved for the work's own text (chapters, annexes, appendices), if and when it is published; no vocabulary may use it. It is an interim home: when the book has its own domain, each page there redirects permanently rather than being mirrored. Section anchors are keyed by code or slug, never page numbers, so term pages can link into the text.
-- The published vocabulary includes its available definitions; full manuscript text stays private. Reader pages retain `noindex` until a separate decision is made about search-engine indexing.
+- `/dehumanization/text/` is reserved for the work's own text (chapters, annexes, appendices); no vocabulary may use it. Annexes 1 and 2 are published there as PDFs (see Published texts). It is an interim home: when the book has its own domain, each page there redirects permanently rather than being mirrored. Section anchors are keyed by code or slug, never page numbers, so term pages can link into the text.
+- The published vocabulary includes its available definitions. Beyond that, only the texts listed under a work's `texts` are published; the rest of the manuscript stays private. Reader pages retain `noindex` until a separate decision is made about search-engine indexing.
 
 ## Licensing
 

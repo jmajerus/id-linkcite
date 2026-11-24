@@ -38,6 +38,13 @@ plugins:
     config:
       directory: file:../build/pages
 
+  # Published texts of a work (build/text/<work>/), e.g. /dehumanization/text/annex-1.pdf.
+  dehumanization-text:
+    module: trifid-core/plugins/static.js
+    paths: /dehumanization/text
+    config:
+      directory: file:../build/text/dehumanization
+
   assets:
     module: trifid-core/plugins/static.js
     paths: /assets

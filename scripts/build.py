@@ -17,6 +17,8 @@ import html
 import hashlib
 import json
 import os
+import shutil
+from datetime import datetime, timezone
 import subprocess
 import sys
 from pathlib import Path
@@ -60,6 +62,30 @@ def source_commit(path):
         return None
 
 
+def copy_texts(config, out):
+    """Copy each work's published texts (vocabularies.json "texts") into build/text/<work>/, fingerprinted.
+
+    They are served at /<work>/text/<file>. The folder is rebuilt from scratch, so a text dropped from
+    the configuration also leaves the release.
+    """
+    shutil.rmtree(out, ignore_errors=True)
+    texts = []
+    for work in config.get('works', []):
+        for text in work.get('texts', []):
+            source = (ROOT / text['source']).resolve()
+            if not source.is_file():
+                sys.exit(f"{work['path']}: missing {source}. Build it in the manuscript repository first.")
+            data = source.read_bytes()
+            target = out / work['path'] / text['file']
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+            built = datetime.fromtimestamp(source.stat().st_mtime, timezone.utc).date().isoformat()
+            print(f"{work['path']}/text/{text['file']}: {len(data):,} bytes, built {built}")
+            texts.append({'work': work['path'], 'file': text['source'], 'href': f"/{work['path']}/text/{text['file']}",
+                          'sha256': hashlib.sha256(data).hexdigest(), 'bytes': len(data), 'built': built})
+    return texts
+
+
 def works(manifest, config):
     """Each work (vocabularies.json "works") with the published vocabularies under its path, for its page."""
     base = manifest['base']
@@ -70,8 +96,10 @@ def works(manifest, config):
                          'short': v['path'].rsplit('/', 1)[-1].replace('-', ' ').capitalize(),
                          'resources': v['resources']}
                         for v in manifest['vocabularies'] if v['path'].startswith(work['path'] + '/')]
+        built = {t['href']: t for t in manifest.get('texts', [])}
+        texts = [{**t, **built[f"/{work['path']}/text/{t['file']}"]} for t in work.get('texts', [])]
         if vocabularies:
-            result.append({**work, 'href': '/' + work['path'], 'vocabularies': vocabularies})
+            result.append({**work, 'href': '/' + work['path'], 'vocabularies': vocabularies, 'texts': texts})
     return result
 
 
@@ -168,6 +196,7 @@ def main():
     # Sorted, so an unchanged build gives an unchanged file.
     lines = sorted(set(dataset.serialize(format='nquads').splitlines()) - {''})
     (args.out / 'public.nq').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    manifest['texts'] = copy_texts(config, args.out / 'text')
     grouped = works(manifest, config)
     (args.out / 'welcome.hbs').write_text(welcome(grouped), encoding='utf-8')
     pages = write_pages(dataset, base + '/', args.out / 'pages', grouped)
