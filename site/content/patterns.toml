@@ -34,6 +34,15 @@ proposed = "Candidates under review, not yet part of the published catalog."
 collection = "section-predatory-choice-architecture"
 numeral = "I"
 blurb = "Designs that deliberately manipulate choice, consent or the ability to leave."
+# Markdown. The inclusion rule shown after it comes from the catalog (the domain's inclusion rule).
+note = """
+Many are familiar as "dark patterns". They belong in this catalog not because they deceive, but because they treat
+the person as an object to be manipulated rather than a subject to be respected. Each can seem minor; built into
+systems, they make that stance ordinary and apply it at scale.
+
+Six of the seven have counterparts in the catalog of deceptive patterns maintained by Harry Brignull and Mark Leiser
+at [deceptive.design](https://www.deceptive.design/); each pattern's page links to its counterpart.
+"""
 
 [[sections]]
 collection = "section-algorithmic-interface-mediated-amplification"

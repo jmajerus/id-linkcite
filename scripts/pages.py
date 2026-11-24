@@ -5,6 +5,7 @@ site/content/. The pages plugin (trifid/plugins/pages.js) serves them to browser
 still get Trifid's own responses.
 """
 import re
+from urllib.parse import urlsplit
 import json
 import tomllib
 from collections import Counter, defaultdict
@@ -17,7 +18,7 @@ from markupsafe import Markup
 from rdflib import Graph, Namespace, URIRef
 from rdflib.namespace import OWL, RDF, RDFS, SKOS
 
-from editorial import resource_text, reader_resources, generic_context, editorial_marker, EDITOR_URL
+from editorial import english_literals, resource_text, reader_resources, generic_context, editorial_marker, EDITOR_URL
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = 'https://id.linkcite.org'
@@ -56,6 +57,29 @@ class Tag:
         return text[:1].upper() + text[1:]
 
 
+@dataclass
+class Match:
+    """A counterpart in another catalog, named from its address: .../types/hard-to-cancel/ at deceptive.design."""
+    iri: str
+
+    @staticmethod
+    def linkable(iri):
+        """Only web addresses with a host become links: never javascript:, data: or a URN."""
+        if not isinstance(iri, URIRef):
+            return False
+        parts = urlsplit(str(iri))
+        return parts.scheme in ('http', 'https') and bool(parts.hostname)
+
+    @property
+    def name(self):
+        text = self.iri.rstrip('/').rsplit('/', 1)[-1].replace('-', ' ')
+        return text[:1].upper() + text[1:]
+
+    @property
+    def site(self):
+        return urlsplit(self.iri).hostname.removeprefix('www.')
+
+
 def natural(code):
     """A sort key that puts DF1-2 before DF1-10."""
     return [int(part) if part.isdigit() else part for part in re.split(r'(\d+)', code)]
@@ -78,6 +102,7 @@ class Pattern:
     contexts: list = field(default_factory=list)
     functions: list = field(default_factory=list)
     counter_tags: list = field(default_factory=list)
+    matches: list = field(default_factory=list)      # counterparts in other catalogs (skos:closeMatch)
 
     @property
     def href(self):
@@ -139,6 +164,8 @@ class Catalog:
             p.contexts = tags(node, PC.hasContext)
             p.functions = tags(node, PC.hasFunction)
             p.counter_tags = tags(node, PC.hasCounter)
+            p.matches = sorted((Match(str(m)) for m in g.objects(node, SKOS.closeMatch) if Match.linkable(m)),
+                               key=lambda m: m.iri)
         self.tagged = defaultdict(list)  # tag IRI -> patterns
         for p in self.patterns.values():
             for tag in (*p.contexts, *p.functions, *p.counter_tags):
@@ -165,7 +192,10 @@ class Catalog:
                 p.group = p.group or group
             return group
 
+        # A section's scope note (its inclusion rule) comes from the data; its note is authored Markdown.
+        scope = lambda key: english_literals(self.graph, URIRef(f'{root}/collections/{key}'), SKOS.scopeNote)
         self.sections = [place({'id': s['collection'].removeprefix('section-'), 'numeral': s['numeral'], 'blurb': s['blurb'],
+                                'note': s.get('note', ''), 'scope_notes': scope(s['collection']),
                                 'title': self.label(URIRef(f"{root}/collections/{s['collection']}")), 'patterns': members(s['collection'])})
                          for s in c['sections']]
         clusters = sorted((p for p in self.patterns.values() if p.kind == 'cluster'), key=sort_key)

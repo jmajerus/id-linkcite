@@ -76,6 +76,8 @@ h3 a { color: inherit; }
 .contents ol ol { list-style: none; padding-left: 0.75rem; font-size: 0.95rem; }
 
 .part-intro, .blurb { color: var(--muted); margin: 0 0 0.8rem; }
+div.blurb p { margin: 0 0 0.5rem; }
+.scope-note { font-size: 0.95rem; border-left: 3px solid var(--rule); padding-left: 0.8rem; margin: 0 0 0.8rem; }
 .numeral { color: var(--muted); font-weight: 500; margin-right: 0.2rem; }
 .group { margin-top: 0.5rem; }
 

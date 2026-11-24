@@ -59,6 +59,13 @@
   {{ chips('Where it appears', p.contexts, page.contexts) }}
   {{ chips('How it works', p.functions, page.functions) }}
   {{ chips('What works against it', p.counter_tags, page.counter_tags) }}
+  {% if p.matches %}
+  <section class="facet">
+    <h2>Elsewhere</h2>
+    <p class="blurb">A close counterpart in another catalog. This catalog includes a pattern only when it overrides the person's agency.</p>
+    <ul class="patterns">{% for m in p.matches %}<li><a href="{{ m.iri }}" rel="external">{{ m.name }}</a> at {{ m.site }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
 
   {% if previous or next %}
   <nav class="pager" aria-label="{{ p.group.title }}">
