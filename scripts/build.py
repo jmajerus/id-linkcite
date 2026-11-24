@@ -84,11 +84,13 @@ def welcome(works):
     <li class="trifid-card">
       <h3><a href="{e(w['href'])}">{e(w['title'])}</a></h3>
       <p>{e(w['description'])}</p>
-      <p>{' · '.join(f'<a href="{e(v["href"])}">{e(v["short"])}</a>' for v in w['vocabularies'])}</p>
+      <p class="shortcuts">{' · '.join(f'<a href="{e(v["href"])}">{e(v["short"])}</a>' for v in w['vocabularies'])}</p>
     </li>''' for w in works)
     # Trifid's grid lets cards shrink to 250px, too narrow for the cards' text.
     return f'''<style>
   .trifid-card-grid {{ grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }}
+  /* The title link covers the whole card (Trifid's h3 a::after); lift the shortcuts above it. */
+  .trifid-card .shortcuts a {{ position: relative; z-index: 1; }}
 </style>
 <div class="trifid-header-title">
   <div class="trifid-content">
