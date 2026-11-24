@@ -72,6 +72,7 @@ Add an entry to `vocabularies.json`: its `path` (`<work>/<vocabulary>`, which mu
 
 - IRIs in pre-1.0 ontologies are provisional and may be revised, consolidated or retired. Once an IRI is included in a formally published ontology release at version 1.0 or later, preserve that identifier permanently, even if its label changes or the resource is deprecated. Never put a version in an entity IRI.
 - Terms take slash paths (`/dehumanization/patterns/sacralization-of-procedure`); classes and properties may use a `#` vocabulary document (`/dehumanization/patterns/vocab#AntiPattern`).
+- `/dehumanization/text/` is reserved for the work's own text (chapters, annexes, appendices), if and when it is published; no vocabulary may use it. It is an interim home: when the book has its own domain, each page there redirects permanently rather than being mirrored. Section anchors are keyed by code or slug, never page numbers, so term pages can link into the text.
 - The published vocabulary includes its available definitions; full manuscript text stays private. Reader pages retain `noindex` until a separate decision is made about search-engine indexing.
 
 ## Licensing
