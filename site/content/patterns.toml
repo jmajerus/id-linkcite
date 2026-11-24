@@ -1,4 +1,4 @@
-# Text for the Dehumanization Patterns overview (https://id.linkcite.org/patterns/scheme).
+# Text for the Dehumanization Patterns overview (https://id.linkcite.org/dehumanization/patterns/scheme).
 # Paragraphs are separated by blank lines. Everything else on the page comes from the data.
 
 title = "Dehumanization Patterns"
@@ -20,7 +20,7 @@ reading = """
 Patterns describe; they don't diagnose. Recognizing one tells you what is happening, not why, who is to blame,
 or what should be done. Treat the catalog as a set of lenses and a shared vocabulary, not a checklist.
 
-The book reads each pattern alongside the [Dehumanization Frameworks](/frameworks/scheme), which explain the
+The book reads each pattern alongside the [Dehumanization Frameworks](/dehumanization/frameworks/scheme), which explain the
 conditions under which these patterns take hold.
 """
 
@@ -77,7 +77,7 @@ contexts = "Settings where this pattern shows up."
 functions = "What the pattern does to the people it affects."
 counter_tags = "Design choices that work against it."
 
-# Tag vocabularies that patterns use, by the last segment of the vocabulary's IRI (/patterns/tags/<key>).
+# Tag vocabularies that patterns use, by the last segment of the vocabulary's IRI (/dehumanization/patterns/tags/<key>).
 # noun: plural used mid-sentence ("Other effects on the same patterns", "All effects").
 [tags.context]
 title = "Settings"

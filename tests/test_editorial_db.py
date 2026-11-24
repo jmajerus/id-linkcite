@@ -15,7 +15,7 @@ from psycopg.rows import dict_row
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "editorial_service"))
 from server import change, Problem, PublishedHTMLCache
 
-IRI = "https://id.linkcite.org/patterns/test-editorial-integration"
+IRI = "https://id.linkcite.org/dehumanization/patterns/test-editorial-integration"
 
 @unittest.skipUnless(os.environ.get("LINKCITE_TEST_EDITOR_DSN") and
                      os.environ.get("LINKCITE_TEST_READER_DSN"), "disposable PostgreSQL DSNs not set")

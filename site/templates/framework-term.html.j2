@@ -1,7 +1,7 @@
 {% extends 'base.html.j2' %}
 {% from '_macros.html.j2' import term_list, pager %}
 {% block title %}{{ t.code }} {{ t.label }}{% endblock %}
-{% block crumbs %}{% set fw = t.framework %}<span class="crumb">/ <a href="/frameworks/scheme">{{ content.title }}</a> / <a href="{{ fw.href }}">{{ fw.code }} {{ fw.label }}</a>{% if t.parent is not sameas fw %} / <a href="{{ t.parent.href }}">{{ t.parent.code }}</a>{% endif %}</span>{% endblock %}
+{% block crumbs %}{% set fw = t.framework %}<span class="crumb">/ <a href="{{ frameworks_home }}">{{ content.title }}</a> / <a href="{{ fw.href }}">{{ fw.code }} {{ fw.label }}</a>{% if t.parent is not sameas fw %} / <a href="{{ t.parent.href }}">{{ t.parent.code }}</a>{% endif %}</span>{% endblock %}
 {% block main %}
 {% set fw = t.framework %}
 <article class="entry">

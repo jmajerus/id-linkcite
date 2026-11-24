@@ -29,7 +29,7 @@ from pages import write_pages
 from source_state import source_state
 
 ROOT = Path(__file__).resolve().parent.parent
-PC = Namespace('https://id.linkcite.org/patterns/vocab#')
+PC = Namespace('https://id.linkcite.org/dehumanization/patterns/vocab#')
 TERM = 'urn:terminology-mcp:vocab:'
 
 PUBLIC_TEXT = {RDFS.label, SKOS.prefLabel, SKOS.altLabel, SKOS.notation, DCTERMS.title, OWL.versionInfo,
@@ -60,27 +60,40 @@ def source_commit(path):
         return None
 
 
-def welcome(manifest):
-    """The home page: one card per published vocabulary. Links are relative, so they work locally too."""
+def works(manifest, config):
+    """Each work (vocabularies.json "works") with the published vocabularies under its path, for its page."""
     base = manifest['base']
+    result = []
+    for work in config.get('works', []):
+        vocabularies = [{'href': '/' + v['home'][len(base):], 'title': v['title'], 'iri': base + v['path'],
+                         'resources': v['resources']}
+                        for v in manifest['vocabularies'] if v['path'].startswith(work['path'] + '/')]
+        if vocabularies:
+            result.append({**work, 'href': '/' + work['path'], 'vocabularies': vocabularies})
+    return result
+
+
+def welcome(works):
+    """The home page: general, with one link per work; each work's page lists its vocabularies.
+    Links are relative, so they work locally too."""
+    e = html.escape
     cards = ''.join(
         f'''
     <li class="trifid-card">
-      <h3><a href="/{html.escape(v['home'][len(base):])}">{html.escape(v['title'])}</a></h3>
-      <p><code>{html.escape(base + v['path'])}/</code> · {v['resources']} resources</p>
-    </li>''' for v in manifest['vocabularies'])
-    # Trifid's grid lets cards shrink to 250px, too narrow for a monospace vocabulary IRI.
+      <h3><a href="{e(w['href'])}">{e(w['title'])}</a></h3>
+      <p>{e(w['description'])}</p>
+    </li>''' for w in works)
+    # Trifid's grid lets cards shrink to 250px, too narrow for the cards' text.
     return f'''<style>
   .trifid-card-grid {{ grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); }}
-  .trifid-card code {{ overflow-wrap: anywhere; }}
 </style>
 <div class="trifid-header-title">
   <div class="trifid-content">
     <div class="container">
       <h1>id.linkcite.org</h1>
-      <p>Persistent identifiers for the terms of <cite>The Struggle Against Dehumanization</cite> and related
-      vocabularies. Identifiers are provisional during pre-1.0 development and become permanent when included
-      in a formally published ontology release at version 1.0 or later.</p>
+      <p>Persistent identifiers for the terms of published vocabularies, grouped by the work they come from.
+      Identifiers are provisional during pre-1.0 development and become permanent when included in a formally
+      published ontology release at version 1.0 or later.</p>
       <p>Each IRI resolves here to its available definitions, codes and links: as a page in a browser, or as Turtle,
       JSON-LD or N-Triples by content negotiation. Reader pages may also include editorial commentary.</p>
     </div>
@@ -88,9 +101,10 @@ def welcome(manifest):
 </div>
 
 <div class="trifid-content">
-  <h2>Vocabularies</h2>
+  <h2>Works</h2>
   <ul class="trifid-card-grid">{cards}
   </ul>
+  <p>Additional vocabularies will be added here.</p>
 
   <h2>Query</h2>
   <ul class="trifid-link-list">
@@ -149,8 +163,9 @@ def main():
     # Sorted, so an unchanged build gives an unchanged file.
     lines = sorted(set(dataset.serialize(format='nquads').splitlines()) - {''})
     (args.out / 'public.nq').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-    (args.out / 'welcome.hbs').write_text(welcome(manifest), encoding='utf-8')
-    pages = write_pages(dataset, base + '/', args.out / 'pages')
+    grouped = works(manifest, config)
+    (args.out / 'welcome.hbs').write_text(welcome(grouped), encoding='utf-8')
+    pages = write_pages(dataset, base + '/', args.out / 'pages', grouped)
     print(f'Wrote {len(pages)} reader pages')
     # Last: tools/deploy.py treats the manifest's site state as proof of a complete build.
     # Atomically, so an interrupted write never leaves a partial manifest.

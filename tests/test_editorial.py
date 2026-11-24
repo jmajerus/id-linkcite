@@ -11,8 +11,8 @@ from build import public
 from pages import environment
 
 BASE = "https://id.linkcite.org/"
-NODE = URIRef(BASE + "patterns/example")
-PC = Namespace(BASE + "patterns/vocab#")
+NODE = URIRef(BASE + "dehumanization/patterns/example")
+PC = Namespace(BASE + "dehumanization/patterns/vocab#")
 
 
 class EditorialTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class EditorialTests(unittest.TestCase):
 
     def test_filter_and_reader_text(self):
         filtered = Graph()
-        for triple in public(self.graph, BASE + "patterns"):
+        for triple in public(self.graph, BASE + "dehumanization/patterns"):
             filtered.add(triple)
         self.assertIn((NODE, SKOS.scopeNote, Literal("A scope note")), filtered)
         self.assertFalse(list(filtered.objects(NODE, PC.bodyMarkdown)))
@@ -50,10 +50,10 @@ class EditorialTests(unittest.TestCase):
         self.assertEqual(marker, str(editorial_marker(str(NODE))))
         # Hidden for visitors; the editor's hint cookie reveals it. Fragment IRIs keep their #.
         self.assertEqual(link, '<p class="edit-link" hidden><a href="https://id-editorial.linkcite.org/admin'
-                               '?iri=https%3A//id.linkcite.org/patterns/example">Edit</a></p>')
+                               '?iri=https%3A//id.linkcite.org/dehumanization/patterns/example">Edit</a></p>')
         fragment = environment().get_template("_resource-content.html.j2").render(
-            **ctx, editorial_iri=BASE + "patterns/vocab#AntiPattern")
-        self.assertIn("?iri=https%3A//id.linkcite.org/patterns/vocab%23AntiPattern", fragment)
+            **ctx, editorial_iri=BASE + "dehumanization/patterns/vocab#AntiPattern")
+        self.assertIn("?iri=https%3A//id.linkcite.org/dehumanization/patterns/vocab%23AntiPattern", fragment)
 
     def test_editorial_sanitization(self):
         html = str(render_markdown('## Heading\n\n[bad](javascript:alert(1))\n\n'
@@ -66,7 +66,7 @@ class EditorialTests(unittest.TestCase):
         self.assertNotIn("<script", html)
 
     def test_slash_and_hash_registry(self):
-        doc = URIRef(BASE + "patterns/vocab")
+        doc = URIRef(BASE + "dehumanization/patterns/vocab")
         term = URIRef(str(doc) + "#AntiPattern")
         self.graph.add((doc, RDFS.label, Literal("Vocabulary")))
         self.graph.add((term, RDFS.label, Literal("Anti-pattern")))

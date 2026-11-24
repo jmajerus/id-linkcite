@@ -1,6 +1,6 @@
 {% extends 'base.html.j2' %}
 {% block title %}{{ vocabulary.title }}{% endblock %}
-{% block crumbs %}<span class="crumb">/ <a href="/patterns/scheme">{{ content.title }}</a></span>{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="{{ patterns_home }}">{{ content.title }}</a></span>{% endblock %}
 {% block main %}
 {% macro chip(t) %}<li><a href="{{ t.href }}"{% if not count(t) %} class="unused"{% endif %}>{{ t.name }}{% if count(t) %} <span class="n">{{ count(t) }}</span>{% endif %}</a></li>{% endmacro %}
 <div class="hero">

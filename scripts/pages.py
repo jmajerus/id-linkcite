@@ -21,7 +21,10 @@ from editorial import resource_text, reader_resources, generic_context, editoria
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = 'https://id.linkcite.org'
-PC = Namespace(SITE + '/patterns/vocab#')
+# Vocabularies are grouped by the work they come from (vocabularies.json "works").
+PATTERNS = SITE + '/dehumanization/patterns'
+FRAMEWORKS = SITE + '/dehumanization/frameworks'
+PC = Namespace(PATTERNS + '/vocab#')
 
 
 def md(text, inline=False):
@@ -100,6 +103,9 @@ def environment():
     env.filters['editorial_marker'] = editorial_marker
     # Reader pages carry a hidden Edit link to the editor; only the editor's browser shows it.
     env.globals['editor_url'] = EDITOR_URL
+    env.globals['patterns_root'] = path_of(PATTERNS)
+    env.globals['patterns_home'] = path_of(PATTERNS) + '/scheme'
+    env.globals['frameworks_home'] = path_of(FRAMEWORKS) + '/scheme'
     return env
 
 
@@ -109,7 +115,8 @@ class Catalog:
     def __init__(self, graph: Graph):
         self.graph = graph
         self.content = tomllib.loads((ROOT / 'site/content/patterns.toml').read_text(encoding='utf-8'))
-        self.root = SITE + '/patterns'
+        self.root = PATTERNS
+        self.path = path_of(PATTERNS)[1:]
         self.scheme = URIRef(self.root + '/scheme')
         g, label = graph, self.label
 
@@ -180,7 +187,7 @@ class Catalog:
     def overview(self):
         counts = {kind: sum(p.kind == kind for p in self.patterns.values()) for kind in ('anti', 'restorative')}
         version = self.graph.value(URIRef(self.root), OWL.versionInfo)
-        return 'patterns/scheme.html', 'patterns-overview.html.j2', {
+        return f'{self.path}/scheme.html', 'patterns-overview.html.j2', {
             'content': self.content, 'iri': str(self.scheme), 'counts': counts, 'sections': self.sections,
             'anti_clusters': self.anti_clusters, 'restorative_clusters': self.restorative_clusters,
             'restorative': self.restorative['patterns'], 'proposed': self.proposed['patterns'], 'version': str(version or ''),
@@ -190,7 +197,7 @@ class Catalog:
         for p in sorted(self.patterns.values(), key=sort_key):
             siblings = p.group['patterns'] if p.group else []
             i = siblings.index(p) if p in siblings else -1
-            yield f'patterns/{p.slug}.html', 'pattern.html.j2', {
+            yield f'{self.path}/{p.slug}.html', 'pattern.html.j2', {
                 'content': self.content, 'page': self.content['pattern_page'], 'iri': p.iri, 'p': p,
                 'previous': siblings[i - 1] if i > 0 else None,
                 'next': siblings[i + 1] if 0 <= i < len(siblings) - 1 else None,
@@ -212,7 +219,7 @@ class Catalog:
             ordered = lambda items: sorted(items, key=lambda t: t.name.lower())
             vocabulary = {'key': key, 'iri': str(scheme), 'href': path_of(scheme), **text}
             top = ordered(t for t in tags.values() if not broader[t])
-            yield f'patterns/tags/{key}.html', 'tag-vocabulary.html.j2', {
+            yield f'{self.path}/tags/{key}.html', 'tag-vocabulary.html.j2', {
                 'content': self.content, 'iri': str(scheme), 'vocabulary': vocabulary, 'count': count,
                 'top': top, 'narrower': {t: ordered(n) for t, n in narrower.items()},
                 'hierarchical': bool(narrower), 'used': sum(1 for t in tags.values() if count(t)), 'total': len(tags),
@@ -225,7 +232,7 @@ class Catalog:
                 together = Counter(tag.iri for p in patterns for tag in (*p.contexts, *p.functions, *p.counter_tags)
                                    if tag.iri != t.iri and tag.iri in vocab_tags)
                 with_it = [(vocab_tags[i], n) for i, n in sorted(together.items(), key=lambda item: (-item[1], vocab_tags[item[0]].name))][:10]
-                yield f'patterns/tags/{key}/{t.href.rsplit("/", 1)[1]}.html', 'tag.html.j2', {
+                yield f'{self.path}/tags/{key}/{t.href.rsplit("/", 1)[1]}.html', 'tag.html.j2', {
                     'content': self.content, 'iri': t.iri, 'tag': t, 'vocabulary': vocabulary,
                     'anti': [p for p in patterns if p.kind == 'anti'], 'restorative': [p for p in patterns if p.kind == 'restorative'],
                     'broader': broader[t], 'narrower': ordered(narrower.get(t, [])), 'with_it': with_it, 'count': len(patterns),
@@ -263,7 +270,8 @@ class Frameworks:
     def __init__(self, graph: Graph):
         self.graph = graph
         self.content = tomllib.loads((ROOT / 'site/content/frameworks.toml').read_text(encoding='utf-8'))
-        self.root = SITE + '/frameworks'
+        self.root = FRAMEWORKS
+        self.path = path_of(FRAMEWORKS)[1:]
         self.scheme = URIRef(self.root + '/scheme')
         g = graph
         self.terms = {}
@@ -312,7 +320,7 @@ class Frameworks:
         missing = [t.code for t in self.frameworks if t.code not in listed]
         if missing:
             raise SystemExit('Frameworks missing from site/content/frameworks.toml groups: ' + ', '.join(missing))
-        return 'frameworks/scheme.html', 'frameworks-overview.html.j2', {
+        return f'{self.path}/scheme.html', 'frameworks-overview.html.j2', {
             'content': c, 'iri': str(self.scheme), 'groups': groups, 'total': len(self.terms) - len(self.frameworks),
         }
 
@@ -320,7 +328,7 @@ class Frameworks:
         c = self.content
         group_of = {code: group for group in c['groups'] for code in group['frameworks']}
         for i, framework in enumerate(self.frameworks):
-            yield f'frameworks/{framework.href.rsplit("/", 1)[1]}.html', 'framework.html.j2', {
+            yield f'{self.path}/{framework.href.rsplit("/", 1)[1]}.html', 'framework.html.j2', {
                 'content': c, 'iri': framework.iri, 't': framework, 'roles': self.roles_of(framework),
                 'focus': c['frameworks'].get(framework.code, {}).get('focus', ''), 'group': group_of.get(framework.code),
                 'previous': self.frameworks[i - 1] if i > 0 else None,
@@ -331,17 +339,23 @@ class Frameworks:
                 continue
             siblings = [s for s in term.parent.children if s.role == term.role]
             i = siblings.index(term)
-            yield f'frameworks/{term.href.rsplit("/", 1)[1]}.html', 'framework-term.html.j2', {
+            yield f'{self.path}/{term.href.rsplit("/", 1)[1]}.html', 'framework-term.html.j2', {
                 'content': c, 'iri': term.iri, 't': term, 'role': c['roles'][term.role], 'role_blurb': c['role_blurbs'][term.role],
                 'roles': self.roles_of(term), 'siblings': siblings,
                 'previous': siblings[i - 1] if i > 0 else None, 'next': siblings[i + 1] if i < len(siblings) - 1 else None,
             }
 
 
-def write_pages(dataset, base, out: Path):
+def work_of(iri, works):
+    """The work whose path the IRI is under, if any."""
+    return next((w for w in works if iri.startswith(SITE + w['href'] + '/')), None)
+
+
+def write_pages(dataset, base, out: Path, works=()):
+    """works: [{href, title, label, description, vocabularies: [{href, title, iri, resources}]}], a page each."""
     env = environment()
-    catalog = Catalog(dataset.graph(URIRef(base + 'patterns')))
-    frameworks = Frameworks(dataset.graph(URIRef(base + 'frameworks')))
+    catalog = Catalog(dataset.graph(URIRef(PATTERNS)))
+    frameworks = Frameworks(dataset.graph(URIRef(FRAMEWORKS)))
     # Render from the filtered public dataset only, never the private source graphs.
     public = Graph()
     for s, p, o, _ in dataset.quads((None, None, None, None)):
@@ -367,10 +381,17 @@ def write_pages(dataset, base, out: Path):
         path = iri[len(base):] + '.html'
         pages.append((path, 'resource.html.j2', generic_context(public, iri)))
     written = []
+    # A work's page is navigation, not a resource: it has no RDF and no editorial text.
+    for work in works:
+        target = out / (work['href'][1:] + '.html')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(env.get_template('work.html.j2').render(work=work), encoding='utf-8')
+        written.append(target.relative_to(out).as_posix())
     for path, template, context in pages:
         iri = context['iri']
         context.update(resource_text(public, iri))
         context['editorial_iri'] = iri
+        context['work'] = work_of(iri, works)
         context['fragment_sections'] = [
             {'anchor': key.split('#', 1)[1],
              **generic_context(public, key), **resource_text(public, key), 'editorial_iri': key}
@@ -385,4 +406,8 @@ def write_pages(dataset, base, out: Path):
     for stale in out.rglob('*.html'):
         if stale.relative_to(out).as_posix() not in generated:
             stale.unlink()
+    # And the directories they leave empty (deepest first), such as a vocabulary's old path.
+    for directory in sorted((d for d in out.rglob('*') if d.is_dir()), key=lambda d: len(d.parts), reverse=True):
+        if not any(directory.iterdir()):
+            directory.rmdir()
     return written

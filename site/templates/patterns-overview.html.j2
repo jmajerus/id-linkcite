@@ -59,7 +59,7 @@
     </li>
     {% if proposed %}<li><a href="#proposed">{{ content.proposed_title }}</a></li>{% endif %}
   </ol>
-  <p class="browse">Browse by: {% for key, v in content.tags.items() %}<a href="/patterns/tags/{{ key }}">{{ v.title }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p>
+  <p class="browse">Browse by: {% for key, v in content.tags.items() %}<a href="{{ patterns_root }}/tags/{{ key }}">{{ v.title }}</a>{{ ' · ' if not loop.last }}{% endfor %}</p>
 </nav>
 
 <section class="part" id="anti-patterns">

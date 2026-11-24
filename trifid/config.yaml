@@ -22,6 +22,15 @@ globals:
       url: /query
 
 plugins:
+  # Old addresses of vocabularies that moved under their work (November 2026, before 1.0).
+  redirects:
+    module: ./trifid/plugins/redirects.js
+    order: 5
+    config:
+      moves:
+        /patterns: /dehumanization/patterns
+        /frameworks: /dehumanization/frameworks
+
   # Reader pages for browsers (build/pages); RDF requests fall through to the entity renderer.
   pages:
     module: ./trifid/plugins/pages.js
@@ -51,7 +60,7 @@ plugins:
   entity-renderer:
     module: "@zazuko/trifid-entity-renderer"
     config:
-      # A document IRI such as /patterns/vocab also shows its hash terms (/patterns/vocab#Pattern).
+      # A document IRI such as /dehumanization/patterns/vocab also shows its hash terms (.../vocab#Pattern).
       resourceExistsQuery: 'ASK { ?s ?p ?o FILTER(?s = <{{iri}}> || STRSTARTS(STR(?s), CONCAT(STR(<{{iri}}>), "#"))) }'
       resourceGraphQuery: 'CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o FILTER(?s = <{{iri}}> || STRSTARTS(STR(?s), CONCAT(STR(<{{iri}}>), "#"))) }'
       labelLoader:

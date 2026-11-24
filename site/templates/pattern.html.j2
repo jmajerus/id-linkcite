@@ -29,7 +29,7 @@
 {% endmacro %}
 
 {% block title %}{{ p.label }}{% endblock %}
-{% block crumbs %}<span class="crumb">/ <a href="/patterns/scheme">{{ content.title }}</a>{% if p.group and p.group.id != 'restorative-patterns' %} / <a href="/patterns/scheme#{{ p.group.id }}">{{ p.group.title }}</a>{% endif %}</span>{% endblock %}
+{% block crumbs %}<span class="crumb">/ <a href="{{ patterns_home }}">{{ content.title }}</a>{% if p.group and p.group.id != 'restorative-patterns' %} / <a href="{{ patterns_home }}#{{ p.group.id }}">{{ p.group.title }}</a>{% endif %}</span>{% endblock %}
 
 {% block main %}
 <article class="entry">
@@ -37,10 +37,10 @@
   <h1>{{ p.label }}</h1>
   <p class="placement">
     {% for g in p.groups %}
-      {% if g.numeral %}Annex 2, section {{ g.numeral }}: <a href="/patterns/scheme#{{ g.id }}">{{ g.title }}</a>
+      {% if g.numeral %}Annex 2, section {{ g.numeral }}: <a href="{{ patterns_home }}#{{ g.id }}">{{ g.title }}</a>
       {% elif g.cluster %}Part of the <a href="{{ g.href }}">{{ g.title }}</a> cluster
       {% elif g.id == 'proposed' %}Proposed for the catalog; not yet in the book
-      {% else %}One of the catalog's <a href="/patterns/scheme#{{ g.id }}">restorative patterns</a>{% endif %}{{ '<br>' | safe if not loop.last }}
+      {% else %}One of the catalog's <a href="{{ patterns_home }}#{{ g.id }}">restorative patterns</a>{% endif %}{{ '<br>' | safe if not loop.last }}
     {% endfor %}
     {% if p.kind == 'cluster' %}A group of {{ p.members | length }} micro-patterns in the catalog{% endif %}
   </p>
