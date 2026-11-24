@@ -94,7 +94,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='build and compare, but do not deploy')
     parser.add_argument('--force', action='store_true', help='deploy even if nothing changed')
     args = parser.parse_args()
-    sys.stdout.reconfigure(line_buffering=True)  # keep this output in order with the build steps'
+    sys.stdout.reconfigure(line_buffering=True)  # keep this output in order with the build steps
 
     check_checkout()
     check_texts(json.loads((ROOT / 'vocabularies.json').read_text()))
